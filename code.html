@@ -1,0 +1,2867 @@
+<!DOCTYPE html><html lang="es" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>NexPOS Suite - Terminal POS 100% Funcional</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'sans-serif'] },
+        colors: {
+          brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' }
+        }
+      }
+    }
+  }
+</script>
+<style>
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  .grid-pos-strict {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+  }
+  @media (max-width: 768px) {
+    .grid-pos-strict {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(6, minmax(0, 1fr));
+    }
+  }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased select-none h-screen overflow-hidden flex">
+
+<!-- NOTIFICACIÓN TOAST -->
+<div class="fixed bottom-5 right-5 z-50 transform transition-all duration-300 pointer-events-none bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs font-medium translate-y-20 opacity-0" id="toast">
+  <span class="material-symbols-outlined text-emerald-400 text-base" id="toast-icon">check_circle</span>
+  <span id="toast-text" class="">Módulo: STOCK</span>
+</div>
+
+<!-- SIDEBAR NAVEGACIÓN -->
+<aside class="w-60 bg-white border-r border-slate-200 flex flex-col shrink-0 z-30 shadow-xs">
+  <div class="h-14 px-4 flex items-center gap-2.5 border-b border-slate-100 cursor-pointer" onclick="navigateTo('pos')">
+    <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-xs font-bold">
+      <span class="material-symbols-outlined text-lg">point_of_sale</span>
+    </div>
+    <div class="flex flex-col">
+      <span class="text-sm font-bold text-slate-900 tracking-tight leading-none">Nex<span class="text-blue-600">POS</span></span>
+      <span class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5">RETAIL SUITE &amp; ERP</span>
+    </div>
+  </div>
+
+  <div class="flex-1 overflow-y-auto px-2.5 py-3 space-y-3.5 text-xs">
+    <div>
+      <span class="px-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Operaciones</span>
+      <div class="space-y-0.5">
+        <button class="nav-btn w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg font-medium transition-all text-slate-600 hover:bg-slate-100 hover:text-slate-900" id="nav-pos" onclick="navigateTo('pos')">
+          <span class="material-symbols-outlined text-base">point_of_sale</span>
+          <span class="">Terminal POS</span>
+        </button>
+        <button class="nav-btn w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg font-medium transition-all text-slate-600 hover:bg-slate-100 hover:text-slate-900" id="nav-caja" onclick="navigateTo('caja')">
+          <span class="material-symbols-outlined text-base">payments</span>
+          <span class="">Control de Caja</span>
+        </button>
+        <button class="nav-btn w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg font-medium transition-all text-slate-600 hover:bg-slate-100 hover:text-slate-900" id="nav-facturacion" onclick="navigateTo('caja', 'historial')">
+          <span class="material-symbols-outlined text-base">receipt_long</span>
+          <span class="">Facturación e Historial</span>
+        </button>
+      </div>
+    </div>
+    <div>
+      <span class="px-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Inventario y Compras</span>
+      <div class="space-y-0.5">
+        <button class="nav-btn w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg font-medium transition-all bg-blue-600 text-white shadow-xs" id="nav-stock" onclick="navigateTo('stock')">
+          <span class="material-symbols-outlined text-base">inventory_2</span>
+          <span class="">Catálogo &amp; Stock</span>
+        </button>
+        <button class="nav-btn w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg font-medium transition-all text-slate-600 hover:bg-slate-100 hover:text-slate-900" id="nav-compras" onclick="navigateTo('compras')">
+          <span class="material-symbols-outlined text-base">local_shipping</span>
+          <span class="">Compras &amp; Proveedores</span>
+        </button>
+      </div>
+    </div>
+    <div>
+      <span class="px-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Gestión Comercial</span>
+      <div class="space-y-0.5">
+        <button class="nav-btn w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg font-medium transition-all text-slate-600 hover:bg-slate-100 hover:text-slate-900" id="nav-clientes" onclick="navigateTo('clientes')">
+          <span class="material-symbols-outlined text-base">group</span>
+          <span class="">Clientes</span>
+        </button>
+      </div>
+    </div>
+    <div>
+      <span class="px-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Administración</span>
+      <div class="space-y-0.5">
+        <button class="nav-btn w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg font-medium transition-all text-slate-600 hover:bg-slate-100 hover:text-slate-900" id="nav-empleados" onclick="navigateTo('empleados')">
+          <span class="material-symbols-outlined text-base">badge</span>
+          <span class="">Empleados &amp; Permisos</span>
+        </button>
+        <button class="nav-btn w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg font-medium transition-all text-slate-600 hover:bg-slate-100 hover:text-slate-900" id="nav-auditoria" onclick="navigateTo('empleados', 'auditoria')">
+          <span class="material-symbols-outlined text-base">history_toggle_off</span>
+          <span class="">Auditoría del Sistema</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="p-2.5 border-t border-slate-100 bg-slate-50 flex items-center justify-between text-[11px]">
+    <div class="flex items-center gap-1.5 cursor-pointer hover:opacity-80" onclick="openTurnoModal()">
+      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+      <span class="font-semibold text-slate-700">Terminal 01</span>
+    </div>
+    <span class="text-slate-400">v4.8.2</span>
+  </div>
+</aside>
+
+<!-- CONTENEDOR PRINCIPAL -->
+<div class="flex-1 flex flex-col h-screen overflow-hidden">
+  <!-- ENCABEZADO SUPERIOR -->
+  <header class="h-14 bg-white border-b border-slate-200 px-5 flex items-center justify-between gap-4 shrink-0 relative z-20">
+    <div class="flex items-center gap-3 flex-1 max-w-lg">
+      <div class="relative w-full">
+        <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-base">search</span>
+        <input class="w-full pl-8 pr-7 py-1.5 bg-slate-100 border-none rounded-lg text-xs focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none" id="global-search-input" oninput="handleGlobalSearch(this.value)" placeholder="Búsqueda rápida en el sistema (F2)..." type="text">
+        <button id="btn-clear-search" onclick="clearGlobalSearch()" class="hidden absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+          <span class="material-symbols-outlined text-xs">close</span>
+        </button>
+      </div>
+      <button onclick="openTurnoModal()" class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-full border border-emerald-200 text-[11px] font-semibold whitespace-nowrap transition-colors">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+        Caja 01 - Turno Mañana
+      </button>
+    </div>
+
+    <div class="flex items-center gap-2 relative"><!-- Botón Atajos F1-F12 -->
+      <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-semibold transition-colors shadow-xs" onclick="openShortcutsModal()">
+        <span class="material-symbols-outlined text-base text-slate-700">keyboard</span>
+        <span class="hidden md:inline">Atajos de teclado</span>
+      </button>
+
+      <!-- Notificaciones con Dropdown Popover -->
+      <div class="relative">
+        <button class="relative p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors" id="btn-notifications" onclick="toggleNotifications(event)">
+          <span class="material-symbols-outlined text-xl">notifications</span>
+          <span class="absolute top-1 right-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-xs" id="badge-notif">3</span>
+        </button>
+        <div id="popover-notifs" class="hidden absolute right-0 top-11 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 py-2.5 px-3 z-50 text-xs">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+            <span class="font-bold text-slate-800 flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-blue-600 text-base">notifications_active</span> Notificaciones
+            </span>
+            <button onclick="clearAllNotifications()" class="text-[11px] text-blue-600 hover:underline font-semibold">Marcar leídas</button>
+          </div>
+          <div class="divide-y divide-slate-100 max-h-60 overflow-y-auto" id="notif-items-list">
+            <div class="py-2 flex items-start gap-2.5" id="notif-card-1">
+              <div class="w-6 h-6 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
+                <span class="material-symbols-outlined text-sm">inventory_2</span>
+              </div>
+              <div class="flex-1">
+                <p class="font-semibold text-slate-800 text-[11px]">Stock bajo: Arroz Superior 1kg</p>
+                <p class="text-slate-500 text-[10px]">Quedan solo 3 unidades en almacén central.</p>
+                <span class="text-[9px] text-slate-400">Hace 15 min</span>
+              </div>
+              <button onclick="dismissNotif('notif-card-1')" class="text-slate-300 hover:text-slate-600"><span class="material-symbols-outlined text-xs">close</span></button>
+            </div>
+            <div class="py-2 flex items-start gap-2.5" id="notif-card-2">
+              <div class="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                <span class="material-symbols-outlined text-sm">lock_open</span>
+              </div>
+              <div class="flex-1">
+                <p class="font-semibold text-slate-800 text-[11px]">Apertura de turno exitosa</p>
+                <p class="text-slate-500 text-[10px]">Turno Mañana iniciado con fondo de $150.00.</p>
+                <span class="text-[9px] text-slate-400">08:00 AM</span>
+              </div>
+              <button onclick="dismissNotif('notif-card-2')" class="text-slate-300 hover:text-slate-600"><span class="material-symbols-outlined text-xs">close</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="h-6 w-px bg-slate-200 mx-1"></div>
+
+      <!-- Menú Usuario Elena Morales con Foto y Rol Completo -->
+      <div class="relative">
+        <div class="flex items-center gap-2.5 pl-1.5 pr-2 py-1 rounded-xl hover:bg-slate-100 cursor-pointer transition-colors border border-transparent hover:border-slate-200" onclick="toggleUserDropdown(event)">
+          <img class="w-8 h-8 rounded-full object-cover ring-2 ring-blue-600/20" src="https://lh3.googleusercontent.com/aida/AEtjO1WERbL1P8XPHcW8Eh96UX6LtWkqUeCaLFHm0WTKIfZHYRilcToR6NwGknRVVVyZsjXMSQf2i4CibIoPEB4e1zbcM786BzrZDY_OCVBsMMYZ0GT16lMrXWsUCVprvkJGjdxjQnMQXrKtcHHGb1p_GGwB-ib6rhacR6Osl2wSvbIGsovh9Mqzcnk28h9cWSdnOpaRwGaYBLPDZ3oOrsjE1gs9T6972n0e35julkwIxbPoujLzk-NhAFaIJ9B5" alt="Elena Morales">
+          <div class="hidden sm:flex flex-col text-left leading-tight">
+            <span class="text-xs font-bold text-slate-900">Elena Morales</span>
+            <span class="text-[10px] text-slate-500 font-medium">Administradora / Cajero Senior</span>
+          </div>
+          <span class="material-symbols-outlined text-slate-400 text-base">expand_more</span>
+        </div>
+        <div id="popover-user-menu" class="absolute right-0 top-12 w-60 bg-white rounded-xl shadow-2xl border border-slate-200 py-2 z-50 text-xs hidden">
+          <div class="px-3 py-2 border-b border-slate-100">
+            <p class="font-bold text-slate-800">Elena Morales</p>
+            <p class="text-[10px] text-slate-400">elena.morales@nexpos.local</p>
+            <span class="inline-block mt-1 px-1.5 py-0.5 bg-blue-50 text-blue-700 font-semibold text-[9px] rounded">Rol: Administrador Total</span>
+          </div>
+          <div class="py-1">
+            <button onclick="navigateTo('empleados'); toggleUserDropdown();" class="w-full text-left px-3 py-1.5 hover:bg-slate-50 flex items-center gap-2 text-slate-700 font-medium">
+              <span class="material-symbols-outlined text-sm text-slate-400">badge</span> Mi Perfil &amp; Empleados
+            </button>
+            <button onclick="openTurnoModal(); toggleUserDropdown();" class="w-full text-left px-3 py-1.5 hover:bg-slate-50 flex items-center gap-2 text-slate-700 font-medium">
+              <span class="material-symbols-outlined text-sm text-slate-400">swap_horiz</span> Estado / Cambio de Turno
+            </button>
+            <button onclick="showToast('Impresora térmica y balanza RS232 calibradas', 'settings'); toggleUserDropdown();" class="w-full text-left px-3 py-1.5 hover:bg-slate-50 flex items-center gap-2 text-slate-700 font-medium">
+              <span class="material-symbols-outlined text-sm text-slate-400">settings</span> Ajustes de Periféricos
+            </button>
+          </div>
+          <div class="border-t border-slate-100 pt-1">
+            <button onclick="showToast('Cerrando sesión de usuario...', 'logout'); setTimeout(() =&gt; location.reload(), 1000);" class="w-full text-left px-3 py-1.5 hover:bg-rose-50 text-rose-600 flex items-center gap-2 font-semibold">
+              <span class="material-symbols-outlined text-sm">logout</span> Cerrar Sesión
+            </button>
+          </div>
+        </div>
+      </div></div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL DE VISTAS (SPA) -->
+  <main class="flex-1 overflow-hidden p-3.5 bg-slate-50 relative">
+
+    <!-- ============================================== -->
+    <!-- VISTA 1: TERMINAL POS (CUADRÍCULA 4x3) -->
+    <!-- ============================================== -->
+    <section class="h-full flex flex-col hidden" id="view-pos">
+      <div class="grid grid-cols-12 gap-3 h-full">
+        
+        <!-- Izquierda: Catálogo y Grilla 4x3 (8 columnas) -->
+        <div class="col-span-12 lg:col-span-8 flex flex-col gap-2.5 h-full min-h-0">
+          <!-- Barra de Búsqueda y Botones Operativos -->
+          <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-xs flex items-center gap-2 shrink-0">
+            <div class="relative flex-1">
+              <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-blue-600 text-lg font-bold">barcode_scanner</span>
+              <input class="w-full pl-9 pr-20 py-1.5 bg-slate-100 rounded-lg text-xs focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none" id="pos-search-input" oninput="filterPosSearch(this.value)" onkeydown="handlePosInputKey(event)" placeholder="Escanear código de barras o escribir producto..." type="text">
+              <button class="absolute right-1.5 top-1/2 -translate-y-1/2 px-2 py-0.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[11px] font-medium rounded flex items-center gap-1 transition-colors" onclick="triggerScanSimulation()">
+                <span class="material-symbols-outlined text-[13px]">qr_code_scanner</span> Escanear
+              </button>
+            </div>
+            <button class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg flex items-center gap-1 transition-colors" onclick="openManualItemModal()">
+              <span class="material-symbols-outlined text-blue-600 text-sm">add_circle</span> Ítem Manual
+            </button>
+            <button class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold rounded-lg flex items-center gap-1 transition-colors" onclick="openPromoModal()">
+              <span class="material-symbols-outlined text-sm">percent</span> % Promo (F4)
+            </button>
+          </div>
+
+          <!-- Filtro de Categorías -->
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5 shrink-0" id="category-pills">
+            <button class="cat-pill px-3 py-1 rounded-full text-xs font-semibold bg-blue-600 text-white shadow-xs whitespace-nowrap transition-colors" onclick="filterCategory('todos', this)">
+              Todos <span class="bg-blue-700/60 px-1 py-0.2 rounded-full text-[10px] ml-0.5" id="badge-count-all">24</span>
+            </button>
+            <button class="cat-pill px-3 py-1 rounded-full text-xs font-semibold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 shadow-xs whitespace-nowrap transition-colors" onclick="filterCategory('bebidas', this)">Bebidas</button>
+            <button class="cat-pill px-3 py-1 rounded-full text-xs font-semibold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 shadow-xs whitespace-nowrap transition-colors" onclick="filterCategory('abarrotes', this)">Abarrotes</button>
+            <button class="cat-pill px-3 py-1 rounded-full text-xs font-semibold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 shadow-xs whitespace-nowrap transition-colors" onclick="filterCategory('lacteos', this)">Lácteos</button>
+            <button class="cat-pill px-3 py-1 rounded-full text-xs font-semibold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 shadow-xs whitespace-nowrap transition-colors" onclick="filterCategory('panaderia', this)">Panadería</button>
+            <button class="cat-pill px-3 py-1 rounded-full text-xs font-semibold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 shadow-xs whitespace-nowrap transition-colors" onclick="filterCategory('limpieza', this)">Limpieza</button>
+            <button class="cat-pill px-3 py-1 rounded-full text-xs font-semibold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 shadow-xs whitespace-nowrap transition-colors" onclick="filterCategory('snacks', this)">Snacks</button>
+          </div>
+
+          <!-- CUADRÍCULA ESTRICTA 4x3 (12 PRODUCTOS EXACTOS POR PÁGINA) -->
+          <div class="flex-1 min-h-0 grid-pos-strict gap-2" id="pos-products-grid">
+        <div onclick="addToCart('p1')" class="bg-white rounded-xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group relative overflow-hidden h-full p-2 active:scale-[0.98]">
+          <div class="flex flex-col gap-1 min-h-0 flex-1">
+            <div class="relative w-full h-24 rounded-lg overflow-hidden bg-slate-100 shrink-0">
+              <img src="https://images.unsplash.com/photo-1550583724-b2692b85b150?w=360&amp;auto=format&amp;fit=crop&amp;q=80" alt="Leche Entera 1L" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+              <span class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-slate-900/80 backdrop-blur-xs text-white font-mono text-[9px] font-semibold uppercase tracking-wider shadow-xs">
+                SKU-775010
+              </span>
+              <span class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold leading-none shadow-xs bg-emerald-600 text-white">
+                Stock: 42
+              </span>
+            </div>
+            <div class="pt-0.5">
+              <h4 class="text-xs font-semibold text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-1 leading-snug" title="Leche Entera 1L">
+                Leche Entera 1L
+              </h4>
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-1 mt-0.5 border-t border-slate-100 shrink-0">
+            <span class="text-sm font-extrabold text-blue-700 font-mono tracking-tight">$4.50</span>
+            <button onclick="event.stopPropagation(); addToCart('p1');" class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors shadow-xs" title="Añadir al ticket">
+              <span class="material-symbols-outlined text-sm font-bold">add</span>
+            </button>
+          </div>
+        </div>
+      
+        <div onclick="addToCart('p2')" class="bg-white rounded-xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group relative overflow-hidden h-full p-2 active:scale-[0.98]">
+          <div class="flex flex-col gap-1 min-h-0 flex-1">
+            <div class="relative w-full h-24 rounded-lg overflow-hidden bg-slate-100 shrink-0">
+              <img src="https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=360&amp;auto=format&amp;fit=crop&amp;q=80" alt="Aceite Vegetal 900ml" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+              <span class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-slate-900/80 backdrop-blur-xs text-white font-mono text-[9px] font-semibold uppercase tracking-wider shadow-xs">
+                SKU-775040
+              </span>
+              <span class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold leading-none shadow-xs bg-emerald-600 text-white">
+                Stock: 28
+              </span>
+            </div>
+            <div class="pt-0.5">
+              <h4 class="text-xs font-semibold text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-1 leading-snug" title="Aceite Vegetal 900ml">
+                Aceite Vegetal 900ml
+              </h4>
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-1 mt-0.5 border-t border-slate-100 shrink-0">
+            <span class="text-sm font-extrabold text-blue-700 font-mono tracking-tight">$11.20</span>
+            <button onclick="event.stopPropagation(); addToCart('p2');" class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors shadow-xs" title="Añadir al ticket">
+              <span class="material-symbols-outlined text-sm font-bold">add</span>
+            </button>
+          </div>
+        </div>
+      
+        <div onclick="addToCart('p3')" class="bg-white rounded-xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group relative overflow-hidden h-full p-2 active:scale-[0.98]">
+          <div class="flex flex-col gap-1 min-h-0 flex-1">
+            <div class="relative w-full h-24 rounded-lg overflow-hidden bg-slate-100 shrink-0">
+              <img src="https://images.unsplash.com/photo-1586201375761-83865001e31c?w=360&amp;auto=format&amp;fit=crop&amp;q=80" alt="Arroz Superior 1kg" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+              <span class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-slate-900/80 backdrop-blur-xs text-white font-mono text-[9px] font-semibold uppercase tracking-wider shadow-xs">
+                SKU-775050
+              </span>
+              <span class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold leading-none shadow-xs bg-amber-500 text-white">
+                Stock: 3
+              </span>
+            </div>
+            <div class="pt-0.5">
+              <h4 class="text-xs font-semibold text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-1 leading-snug" title="Arroz Superior 1kg">
+                Arroz Superior 1kg
+              </h4>
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-1 mt-0.5 border-t border-slate-100 shrink-0">
+            <span class="text-sm font-extrabold text-blue-700 font-mono tracking-tight">$5.80</span>
+            <button onclick="event.stopPropagation(); addToCart('p3');" class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors shadow-xs" title="Añadir al ticket">
+              <span class="material-symbols-outlined text-sm font-bold">add</span>
+            </button>
+          </div>
+        </div>
+      
+        <div onclick="addToCart('p4')" class="bg-white rounded-xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group relative overflow-hidden h-full p-2 active:scale-[0.98]">
+          <div class="flex flex-col gap-1 min-h-0 flex-1">
+            <div class="relative w-full h-24 rounded-lg overflow-hidden bg-slate-100 shrink-0">
+              <img src="https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=360&amp;auto=format&amp;fit=crop&amp;q=80" alt="Refresco Cola Zero 1.5L" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+              <span class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-slate-900/80 backdrop-blur-xs text-white font-mono text-[9px] font-semibold uppercase tracking-wider shadow-xs">
+                SKU-775080
+              </span>
+              <span class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold leading-none shadow-xs bg-emerald-600 text-white">
+                Stock: 64
+              </span>
+            </div>
+            <div class="pt-0.5">
+              <h4 class="text-xs font-semibold text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-1 leading-snug" title="Refresco Cola Zero 1.5L">
+                Refresco Cola Zero 1.5L
+              </h4>
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-1 mt-0.5 border-t border-slate-100 shrink-0">
+            <span class="text-sm font-extrabold text-blue-700 font-mono tracking-tight">$7.50</span>
+            <button onclick="event.stopPropagation(); addToCart('p4');" class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors shadow-xs" title="Añadir al ticket">
+              <span class="material-symbols-outlined text-sm font-bold">add</span>
+            </button>
+          </div>
+        </div>
+      
+        <div onclick="addToCart('p5')" class="bg-white rounded-xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group relative overflow-hidden h-full p-2 active:scale-[0.98]">
+          <div class="flex flex-col gap-1 min-h-0 flex-1">
+            <div class="relative w-full h-24 rounded-lg overflow-hidden bg-slate-100 shrink-0">
+              <img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=360&amp;auto=format&amp;fit=crop&amp;q=80" alt="Pan Molde Blanco 500g" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+              <span class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-slate-900/80 backdrop-blur-xs text-white font-mono text-[9px] font-semibold uppercase tracking-wider shadow-xs">
+                SKU-775091
+              </span>
+              <span class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold leading-none shadow-xs bg-emerald-600 text-white">
+                Stock: 19
+              </span>
+            </div>
+            <div class="pt-0.5">
+              <h4 class="text-xs font-semibold text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-1 leading-snug" title="Pan Molde Blanco 500g">
+                Pan Molde Blanco 500g
+              </h4>
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-1 mt-0.5 border-t border-slate-100 shrink-0">
+            <span class="text-sm font-extrabold text-blue-700 font-mono tracking-tight">$6.20</span>
+            <button onclick="event.stopPropagation(); addToCart('p5');" class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors shadow-xs" title="Añadir al ticket">
+              <span class="material-symbols-outlined text-sm font-bold">add</span>
+            </button>
+          </div>
+        </div>
+      
+        <div onclick="addToCart('p6')" class="bg-white rounded-xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group relative overflow-hidden h-full p-2 active:scale-[0.98]">
+          <div class="flex flex-col gap-1 min-h-0 flex-1">
+            <div class="relative w-full h-24 rounded-lg overflow-hidden bg-slate-100 shrink-0">
+              <img src="https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=360&amp;auto=format&amp;fit=crop&amp;q=80" alt="Galletas Crackers x6" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+              <span class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-slate-900/80 backdrop-blur-xs text-white font-mono text-[9px] font-semibold uppercase tracking-wider shadow-xs">
+                SKU-775023
+              </span>
+              <span class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold leading-none shadow-xs bg-emerald-600 text-white">
+                Stock: 50
+              </span>
+            </div>
+            <div class="pt-0.5">
+              <h4 class="text-xs font-semibold text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-1 leading-snug" title="Galletas Crackers x6">
+                Galletas Crackers x6
+              </h4>
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-1 mt-0.5 border-t border-slate-100 shrink-0">
+            <span class="text-sm font-extrabold text-blue-700 font-mono tracking-tight">$3.80</span>
+            <button onclick="event.stopPropagation(); addToCart('p6');" class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors shadow-xs" title="Añadir al ticket">
+              <span class="material-symbols-outlined text-sm font-bold">add</span>
+            </button>
+          </div>
+        </div>
+      
+        <div onclick="addToCart('p7')" class="bg-white rounded-xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group relative overflow-hidden h-full p-2 active:scale-[0.98]">
+          <div class="flex flex-col gap-1 min-h-0 flex-1">
+            <div class="relative w-full h-24 rounded-lg overflow-hidden bg-slate-100 shrink-0">
+              <img src="https://images.unsplash.com/photo-1585670270608-b404fb88821d?w=360&amp;auto=format&amp;fit=crop&amp;q=80" alt="Detergente Líquido 1.8L" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+              <span class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-slate-900/80 backdrop-blur-xs text-white font-mono text-[9px] font-semibold uppercase tracking-wider shadow-xs">
+                SKU-775077
+              </span>
+              <span class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold leading-none shadow-xs bg-emerald-600 text-white">
+                Stock: 14
+              </span>
+            </div>
+            <div class="pt-0.5">
+              <h4 class="text-xs font-semibold text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-1 leading-snug" title="Detergente Líquido 1.8L">
+                Detergente Líquido 1.8L
+              </h4>
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-1 mt-0.5 border-t border-slate-100 shrink-0">
+            <span class="text-sm font-extrabold text-blue-700 font-mono tracking-tight">$16.90</span>
+            <button onclick="event.stopPropagation(); addToCart('p7');" class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors shadow-xs" title="Añadir al ticket">
+              <span class="material-symbols-outlined text-sm font-bold">add</span>
+            </button>
+          </div>
+        </div>
+      
+        <div onclick="addToCart('p8')" class="bg-white rounded-xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group relative overflow-hidden h-full p-2 active:scale-[0.98]">
+          <div class="flex flex-col gap-1 min-h-0 flex-1">
+            <div class="relative w-full h-24 rounded-lg overflow-hidden bg-slate-100 shrink-0">
+              <img src="https://images.unsplash.com/photo-1608270116805-4f7f6f076bf2?w=360&amp;auto=format&amp;fit=crop&amp;q=80" alt="Cerveza IPA 330ml" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+              <span class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-slate-900/80 backdrop-blur-xs text-white font-mono text-[9px] font-semibold uppercase tracking-wider shadow-xs">
+                SKU-775099
+              </span>
+              <span class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold leading-none shadow-xs bg-amber-500 text-white">
+                Stock: 2
+              </span>
+            </div>
+            <div class="pt-0.5">
+              <h4 class="text-xs font-semibold text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-1 leading-snug" title="Cerveza IPA 330ml">
+                Cerveza IPA 330ml
+              </h4>
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-1 mt-0.5 border-t border-slate-100 shrink-0">
+            <span class="text-sm font-extrabold text-blue-700 font-mono tracking-tight">$8.90</span>
+            <button onclick="event.stopPropagation(); addToCart('p8');" class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors shadow-xs" title="Añadir al ticket">
+              <span class="material-symbols-outlined text-sm font-bold">add</span>
+            </button>
+          </div>
+        </div>
+      
+        <div onclick="addToCart('p9')" class="bg-white rounded-xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group relative overflow-hidden h-full p-2 active:scale-[0.98]">
+          <div class="flex flex-col gap-1 min-h-0 flex-1">
+            <div class="relative w-full h-24 rounded-lg overflow-hidden bg-slate-100 shrink-0">
+              <img src="https://images.unsplash.com/photo-1488477181946-6428a0291777?w=360&amp;auto=format&amp;fit=crop&amp;q=80" alt="Yogurt Fresa 1kg" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+              <span class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-slate-900/80 backdrop-blur-xs text-white font-mono text-[9px] font-semibold uppercase tracking-wider shadow-xs">
+                SKU-775012
+              </span>
+              <span class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold leading-none shadow-xs bg-emerald-600 text-white">
+                Stock: 22
+              </span>
+            </div>
+            <div class="pt-0.5">
+              <h4 class="text-xs font-semibold text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-1 leading-snug" title="Yogurt Fresa 1kg">
+                Yogurt Fresa 1kg
+              </h4>
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-1 mt-0.5 border-t border-slate-100 shrink-0">
+            <span class="text-sm font-extrabold text-blue-700 font-mono tracking-tight">$9.40</span>
+            <button onclick="event.stopPropagation(); addToCart('p9');" class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors shadow-xs" title="Añadir al ticket">
+              <span class="material-symbols-outlined text-sm font-bold">add</span>
+            </button>
+          </div>
+        </div>
+      
+        <div onclick="addToCart('p10')" class="bg-white rounded-xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group relative overflow-hidden h-full p-2 active:scale-[0.98]">
+          <div class="flex flex-col gap-1 min-h-0 flex-1">
+            <div class="relative w-full h-24 rounded-lg overflow-hidden bg-slate-100 shrink-0">
+              <img src="https://images.unsplash.com/photo-1452195100486-9cc805987862?w=360&amp;auto=format&amp;fit=crop&amp;q=80" alt="Queso Gouda 250g" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+              <span class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-slate-900/80 backdrop-blur-xs text-white font-mono text-[9px] font-semibold uppercase tracking-wider shadow-xs">
+                SKU-775015
+              </span>
+              <span class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold leading-none shadow-xs bg-emerald-600 text-white">
+                Stock: 16
+              </span>
+            </div>
+            <div class="pt-0.5">
+              <h4 class="text-xs font-semibold text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-1 leading-snug" title="Queso Gouda 250g">
+                Queso Gouda 250g
+              </h4>
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-1 mt-0.5 border-t border-slate-100 shrink-0">
+            <span class="text-sm font-extrabold text-blue-700 font-mono tracking-tight">$8.20</span>
+            <button onclick="event.stopPropagation(); addToCart('p10');" class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors shadow-xs" title="Añadir al ticket">
+              <span class="material-symbols-outlined text-sm font-bold">add</span>
+            </button>
+          </div>
+        </div>
+      
+        <div onclick="addToCart('p11')" class="bg-white rounded-xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group relative overflow-hidden h-full p-2 active:scale-[0.98]">
+          <div class="flex flex-col gap-1 min-h-0 flex-1">
+            <div class="relative w-full h-24 rounded-lg overflow-hidden bg-slate-100 shrink-0">
+              <img src="https://images.unsplash.com/photo-1612927601601-6638404737ce?w=360&amp;auto=format&amp;fit=crop&amp;q=80" alt="Fideos Spaghetti 500g" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+              <span class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-slate-900/80 backdrop-blur-xs text-white font-mono text-[9px] font-semibold uppercase tracking-wider shadow-xs">
+                SKU-775042
+              </span>
+              <span class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold leading-none shadow-xs bg-emerald-600 text-white">
+                Stock: 75
+              </span>
+            </div>
+            <div class="pt-0.5">
+              <h4 class="text-xs font-semibold text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-1 leading-snug" title="Fideos Spaghetti 500g">
+                Fideos Spaghetti 500g
+              </h4>
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-1 mt-0.5 border-t border-slate-100 shrink-0">
+            <span class="text-sm font-extrabold text-blue-700 font-mono tracking-tight">$3.20</span>
+            <button onclick="event.stopPropagation(); addToCart('p11');" class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors shadow-xs" title="Añadir al ticket">
+              <span class="material-symbols-outlined text-sm font-bold">add</span>
+            </button>
+          </div>
+        </div>
+      
+        <div onclick="addToCart('p12')" class="bg-white rounded-xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group relative overflow-hidden h-full p-2 active:scale-[0.98]">
+          <div class="flex flex-col gap-1 min-h-0 flex-1">
+            <div class="relative w-full h-24 rounded-lg overflow-hidden bg-slate-100 shrink-0">
+              <img src="https://images.unsplash.com/photo-1534483509719-3feaee7c30da?w=360&amp;auto=format&amp;fit=crop&amp;q=80" alt="Atún Trozos en Aceite" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+              <span class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-slate-900/80 backdrop-blur-xs text-white font-mono text-[9px] font-semibold uppercase tracking-wider shadow-xs">
+                SKU-775045
+              </span>
+              <span class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold leading-none shadow-xs bg-emerald-600 text-white">
+                Stock: 35
+              </span>
+            </div>
+            <div class="pt-0.5">
+              <h4 class="text-xs font-semibold text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-1 leading-snug" title="Atún Trozos en Aceite">
+                Atún Trozos en Aceite
+              </h4>
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-1 mt-0.5 border-t border-slate-100 shrink-0">
+            <span class="text-sm font-extrabold text-blue-700 font-mono tracking-tight">$6.80</span>
+            <button onclick="event.stopPropagation(); addToCart('p12');" class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors shadow-xs" title="Añadir al ticket">
+              <span class="material-symbols-outlined text-sm font-bold">add</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+          <!-- BARRA DE PAGINACIÓN INTERACTIVA -->
+          <div class="bg-white px-3.5 py-1.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between text-xs shrink-0">
+            <div class="text-slate-500 font-medium text-[11px]" id="pagination-info">
+              Mostrando <span class="font-bold text-slate-800" id="page-range">1-12</span> de <span class="font-bold text-slate-800" id="total-prods">24</span> productos • Página <span class="font-bold text-blue-600" id="current-page-num">1</span>/<span id="total-pages-num" class="">2</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button class="px-2.5 py-1 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-100 font-semibold disabled:opacity-40 disabled:pointer-events-none flex items-center gap-0.5 text-xs transition-colors" id="btn-prev" onclick="prevPage()" disabled="">
+                <span class="material-symbols-outlined text-sm">chevron_left</span> Anterior
+              </button>
+              <div class="flex items-center gap-1" id="pagination-pills"><button class="w-6 h-6 rounded bg-blue-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">1</button><button onclick="goToPage(2)" class="w-6 h-6 rounded border border-slate-200 text-slate-600 hover:bg-slate-100 font-semibold text-xs flex items-center justify-center transition-colors">2</button></div>
+              <button class="px-2.5 py-1 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-100 font-semibold disabled:opacity-40 disabled:pointer-events-none flex items-center gap-0.5 text-xs transition-colors" id="btn-next" onclick="nextPage()">
+                Siguiente <span class="material-symbols-outlined text-sm">chevron_right</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Barra Informativa de Balanza y Lectura -->
+          <div class="bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between text-[11px] text-slate-500 shrink-0">
+            <div class="flex items-center gap-2">
+              <span class="font-medium text-slate-700">Última lectura: <span class="text-blue-600 font-mono font-bold" id="metric-last-item">Agua Mineral 2.5L</span></span>
+              <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+              <span class="text-emerald-600 font-medium flex items-center gap-1 cursor-pointer hover:underline" onclick="showToast('Balanza RS232: 0.000 kg (Calibrada)', 'scale')">
+                <span class="material-symbols-outlined text-xs">wifi</span> Balanza RS232 Conectada
+              </span>
+            </div>
+            <span class="font-semibold text-slate-700" id="label-tickets-turno">Ventas del turno: 85 tickets</span>
+          </div>
+        </div>
+
+        <!-- Derecha: Ticket de Venta y Cobro (4 columnas) -->
+        <div class="col-span-12 lg:col-span-4 flex flex-col gap-2 h-full min-h-0">
+          
+          <!-- Selector de Cliente -->
+          <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between shrink-0"><div class="flex items-center gap-2.5 min-w-0 flex-1"><div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm shrink-0"><span class="material-symbols-outlined text-base">person</span></div><div class="min-w-0 flex-1 leading-tight"><div class="flex items-center gap-1.5"><span class="text-xs font-bold text-slate-800 truncate block" id="client-name-display">Consumidor Final</span><span class="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-semibold rounded shrink-0" id="client-badge-status">Sin Registro</span></div><p class="text-[10px] text-slate-400 truncate mt-0.5" id="client-doc-display">DNI/RUC: Sin registrar</p></div></div><div class="flex items-center gap-1.5 shrink-0"><button onclick="selectClient('Consumidor Final', 'DNI/RUC: Sin registrar'); showToast('Cliente: Consumidor Final (Sin registro)', 'person');" title="Restablecer a Consumidor Final" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors border border-slate-200"><span class="material-symbols-outlined text-sm">person_off</span></button><button class="px-2.5 py-1 text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors whitespace-nowrap flex items-center gap-1" onclick="openClientModal()"><span class="material-symbols-outlined text-xs">swap_horiz</span> Cambiar</button></div></div>
+
+          <!-- Listado del Ticket -->
+          <div class="bg-white rounded-xl border border-slate-200 shadow-xs flex-1 flex flex-col overflow-hidden min-h-[140px]">
+            <div class="px-3 py-1 bg-slate-50 border-b border-slate-200 flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              <span class="flex-1">PRODUCTO</span>
+              <span class="w-16 text-center">CANT.</span>
+              <span class="w-16 text-right">SUBTOTAL</span>
+              <span class="w-6"></span>
+            </div>
+            <div class="flex-1 overflow-y-auto divide-y divide-slate-100 p-2 text-xs" id="cart-items-container"><div class="p-6 text-center text-slate-400 text-xs">El ticket está vacío.<br>Selecciona o escanea productos para cobrar.</div></div>
+            <div class="px-3 py-1.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs shrink-0">
+              <button class="text-rose-600 hover:bg-rose-50 px-2 py-0.5 rounded font-semibold flex items-center gap-1 text-[11px] transition-colors" onclick="openAnularModal()">
+                <span class="material-symbols-outlined text-xs">delete_sweep</span> Anular (ESC)
+              </button>
+              <span class="text-slate-500 font-semibold text-[11px]" id="cart-count-uds">0 Artículos (0 uds)</span>
+            </div>
+          </div>
+
+          <!-- Caja de Cobro y Vuelto -->
+          <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs flex flex-col gap-2 shrink-0">
+            <div class="space-y-0.5 text-xs">
+              <div class="flex justify-between text-slate-500">
+                <span class="">Subtotal Bruto:</span>
+                <span class="font-semibold text-slate-800 font-mono" id="subtotal-val">$0.00</span>
+              </div>
+              <div class="flex justify-between text-emerald-600 font-medium text-[11px]">
+                <span id="discount-label" class="">Descuento Promoción (-5%):</span>
+                <span class="font-mono" id="discount-val">-$0.00</span>
+              </div>
+              <div class="flex justify-between text-slate-500">
+                <span class="">Impuesto IGV/IVA (18%):</span>
+                <span class="font-semibold text-slate-800 font-mono" id="tax-val">$0.00</span>
+              </div>
+            </div>
+
+            <!-- Total a Cobrar -->
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-2.5 flex items-center justify-between">
+              <div>
+                <span class="text-[9px] font-bold text-blue-700 uppercase tracking-wider block">TOTAL A COBRAR</span>
+                <span class="text-[10px] text-blue-500">Dólares (USD $)</span>
+              </div>
+              <span class="text-2xl font-extrabold text-blue-700 font-mono" id="total-val">$0.00</span>
+            </div>
+
+            <!-- Métodos de Pago -->
+            <div class="grid grid-cols-3 gap-1">
+              <button class="tender-tab py-1.5 px-2 rounded-lg text-xs font-semibold bg-blue-600 text-white flex flex-col items-center shadow-xs transition-colors" id="btn-pay-cash" onclick="setPayMethod('cash')">
+                <span class="material-symbols-outlined text-base">payments</span> Efectivo
+              </button>
+              <button class="tender-tab py-1.5 px-2 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 flex flex-col items-center transition-colors" id="btn-pay-card" onclick="setPayMethod('card')">
+                <span class="material-symbols-outlined text-base">credit_card</span> Tarjeta
+              </button>
+              <button class="tender-tab py-1.5 px-2 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 flex flex-col items-center transition-colors" id="btn-pay-qr" onclick="setPayMethod('qr')">
+                <span class="material-symbols-outlined text-base">qr_code_2</span> QR / Transf.
+              </button>
+            </div>
+
+            <!-- Calculador de Cambio (Efectivo) -->
+            <div class="bg-slate-50 p-2 rounded-lg border border-slate-200 space-y-1.5 text-xs" id="box-cash-calc">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[11px] font-semibold text-slate-700">Monto Recibido:</span>
+                <div class="relative w-28">
+                  <span class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">$</span>
+                  <input class="w-full pl-5 pr-1.5 py-0.5 text-right font-mono font-bold text-xs bg-white rounded border border-slate-300 focus:ring-1 focus:ring-blue-600" id="input-monto-recibido" oninput="recalcVuelto()" step="any" type="number" value="100.00">
+                </div>
+              </div>
+              <div class="flex items-center justify-end gap-1 text-[10px]">
+                <button class="px-2 py-0.5 bg-white border border-slate-300 rounded font-semibold text-slate-600 hover:bg-slate-100 transition-colors" onclick="setMontoPreset(50)">$50</button>
+                <button class="px-2 py-0.5 bg-white border border-slate-300 rounded font-semibold text-slate-600 hover:bg-slate-100 transition-colors" onclick="setMontoPreset(100)">$100</button>
+                <button class="px-2 py-0.5 bg-white border border-slate-300 rounded font-semibold text-slate-600 hover:bg-slate-100 transition-colors" onclick="setMontoPreset(150)">$150</button>
+                <button class="px-2 py-0.5 bg-blue-100 text-blue-700 font-bold rounded hover:bg-blue-200 transition-colors" onclick="setMontoExacto()">Exacto</button>
+              </div>
+              <div class="flex items-center justify-between pt-1 border-t border-slate-200">
+                <span class="font-bold text-slate-700 text-[11px]">Cambio / Vuelto:</span>
+                <span class="text-sm font-bold text-emerald-600 font-mono" id="vuelto-val">$100.00</span>
+              </div>
+            </div>
+
+            <!-- Panel de Datáfono / QR (cuando no es efectivo) -->
+            <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs text-center text-slate-600 hidden" id="box-elec-calc">
+              <span class="material-symbols-outlined text-blue-600 text-xl block mb-0.5" id="elec-icon">qr_code_2</span>
+              <p class="font-bold text-xs" id="elec-title">Código QR Dinámico Generado</p>
+              <p class="text-[10px] text-slate-400" id="elec-desc">Escanee con la app del banco para pago inmediato</p>
+            </div>
+
+            <!-- Botón Cobrar e Imprimir -->
+            <button class="w-full py-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white rounded-xl font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 transition-all" onclick="executeCheckout()">
+              <span class="material-symbols-outlined text-base">receipt_long</span>
+              <span class="">Cobrar e Imprimir (F12)</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- VISTA 2: CONTROL DE CAJA Y ARQUEO -->
+    <!-- ============================================== -->
+    <section class="flex flex-col gap-3 h-full overflow-y-auto pr-1 hidden" id="view-caja">
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <span class="material-symbols-outlined text-blue-600">payments</span> Control de Caja y Arqueo Fiscal
+          </h2>
+          <p class="text-xs text-slate-500">Supervisión en vivo de gaveta, ventas por método y cierre Z</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors" onclick="showToast('Imprimiendo comprobante fiscal X...', 'print'); window.print();">
+            <span class="material-symbols-outlined text-sm">print</span> Corte Parcial (X)
+          </button>
+          <button class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-xs transition-colors" onclick="openTurnoModal()">
+            <span class="material-symbols-outlined text-sm">lock</span> Cierre Definitivo (Z)
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5 text-xs">
+        <div class="bg-white p-3 rounded-xl border-l-4 border-blue-600 border border-slate-200 shadow-xs">
+          <span class="text-[10px] font-bold text-slate-400 uppercase">Fondo Inicial</span>
+          <span class="text-xl font-bold text-slate-900 font-mono block mt-0.5">$150.00</span>
+          <span class="text-[10px] text-slate-400">08:00 AM Apertura</span>
+        </div>
+        <div class="bg-white p-3 rounded-xl border-l-4 border-emerald-500 border border-slate-200 shadow-xs">
+          <span class="text-[10px] font-bold text-slate-400 uppercase">Efectivo en Gaveta</span>
+          <span class="text-xl font-bold text-emerald-600 font-mono block mt-0.5">$1,570.50</span>
+          <span class="text-[10px] text-emerald-600 font-semibold">Cuadre exacto (100%)</span>
+        </div>
+        <div class="bg-white p-3 rounded-xl border-l-4 border-indigo-500 border border-slate-200 shadow-xs">
+          <span class="text-[10px] font-bold text-slate-400 uppercase">Tarjetas POS</span>
+          <span class="text-xl font-bold text-indigo-600 font-mono block mt-0.5">$890.00</span>
+          <span class="text-[10px] text-slate-400">29 transacciones</span>
+        </div>
+        <div class="bg-white p-3 rounded-xl border-l-4 border-purple-500 border border-slate-200 shadow-xs">
+          <span class="text-[10px] font-bold text-slate-400 uppercase">Transferencias / QR</span>
+          <span class="text-xl font-bold text-purple-600 font-mono block mt-0.5">$340.00</span>
+          <span class="text-[10px] text-slate-400">11 transacciones</span>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex-1">
+        <div class="p-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+          <span class="font-bold text-slate-800 text-xs uppercase tracking-wider">Historial de Comprobantes Emitidos en el Turno</span>
+          <span class="text-[11px] text-slate-500">Total registrados: <strong id="caja-invoices-count">6</strong></span>
+        </div>
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-50 text-slate-400 font-bold uppercase text-[10px] border-b border-slate-200">
+            <tr>
+              <th class="p-2.5">Folio</th>
+              <th class="p-2.5">Hora</th>
+              <th class="p-2.5">Cliente</th>
+              <th class="p-2.5">Método</th>
+              <th class="p-2.5 text-right">Total ($)</th>
+              <th class="p-2.5 text-center">Estado</th>
+              <th class="p-2.5 text-right">Acción</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100" id="invoices-tbody">
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-2.5 font-bold font-mono text-blue-600">FAC-00892</td>
+        <td class="p-2.5 text-slate-500">Justo ahora</td>
+        <td class="p-2.5 font-semibold text-slate-800">Consumidor Final</td>
+        <td class="p-2.5"><span class="px-2 py-0.5 rounded bg-slate-100 font-medium text-slate-700 text-[11px]">Efectivo</span></td>
+        <td class="p-2.5 text-right font-mono font-bold text-slate-800">$90.17</td>
+        <td class="p-2.5 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            Emitida / Pagada
+          </span>
+        </td>
+        <td class="p-2.5 text-right">
+          
+            <button onclick="anularFactura(0)" class="px-2 py-0.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded font-semibold text-[11px] transition-colors">
+              Anular
+            </button>
+          
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-2.5 font-bold font-mono text-blue-600">FAC-002341</td>
+        <td class="p-2.5 text-slate-500">Hoy, 13:42</td>
+        <td class="p-2.5 font-semibold text-slate-800">Farmacias Unidas S.A.</td>
+        <td class="p-2.5"><span class="px-2 py-0.5 rounded bg-slate-100 font-medium text-slate-700 text-[11px]">Efectivo</span></td>
+        <td class="p-2.5 text-right font-mono font-bold text-slate-800">$145.20</td>
+        <td class="p-2.5 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            Emitida / Pagada
+          </span>
+        </td>
+        <td class="p-2.5 text-right">
+          
+            <button onclick="anularFactura(1)" class="px-2 py-0.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded font-semibold text-[11px] transition-colors">
+              Anular
+            </button>
+          
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-2.5 font-bold font-mono text-blue-600">FAC-002340</td>
+        <td class="p-2.5 text-slate-500">Hoy, 13:15</td>
+        <td class="p-2.5 font-semibold text-slate-800">Roberto Sánchez</td>
+        <td class="p-2.5"><span class="px-2 py-0.5 rounded bg-slate-100 font-medium text-slate-700 text-[11px]">Tarjeta POS</span></td>
+        <td class="p-2.5 text-right font-mono font-bold text-slate-800">$312.00</td>
+        <td class="p-2.5 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            Emitida / Pagada
+          </span>
+        </td>
+        <td class="p-2.5 text-right">
+          
+            <button onclick="anularFactura(2)" class="px-2 py-0.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded font-semibold text-[11px] transition-colors">
+              Anular
+            </button>
+          
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-2.5 font-bold font-mono text-blue-600">FAC-002339</td>
+        <td class="p-2.5 text-slate-500">Hoy, 12:40</td>
+        <td class="p-2.5 font-semibold text-slate-800">Consumidor Final</td>
+        <td class="p-2.5"><span class="px-2 py-0.5 rounded bg-slate-100 font-medium text-slate-700 text-[11px]">Efectivo</span></td>
+        <td class="p-2.5 text-right font-mono font-bold text-slate-800">$58.50</td>
+        <td class="p-2.5 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700">
+            Anulada
+          </span>
+        </td>
+        <td class="p-2.5 text-right">
+          <span class="text-slate-400 text-[11px]">Revertido</span>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-2.5 font-bold font-mono text-blue-600">FAC-002338</td>
+        <td class="p-2.5 text-slate-500">Hoy, 11:58</td>
+        <td class="p-2.5 font-semibold text-slate-800">Clínica Dental Moderna</td>
+        <td class="p-2.5"><span class="px-2 py-0.5 rounded bg-slate-100 font-medium text-slate-700 text-[11px]">Transferencia Directa</span></td>
+        <td class="p-2.5 text-right font-mono font-bold text-slate-800">$210.00</td>
+        <td class="p-2.5 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            Emitida / Pagada
+          </span>
+        </td>
+        <td class="p-2.5 text-right">
+          
+            <button onclick="anularFactura(4)" class="px-2 py-0.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded font-semibold text-[11px] transition-colors">
+              Anular
+            </button>
+          
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-2.5 font-bold font-mono text-blue-600">FAC-002337</td>
+        <td class="p-2.5 text-slate-500">Hoy, 10:20</td>
+        <td class="p-2.5 font-semibold text-slate-800">Distribuidora del Sur Cía.</td>
+        <td class="p-2.5"><span class="px-2 py-0.5 rounded bg-slate-100 font-medium text-slate-700 text-[11px]">Efectivo</span></td>
+        <td class="p-2.5 text-right font-mono font-bold text-slate-800">$512.80</td>
+        <td class="p-2.5 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            Emitida / Pagada
+          </span>
+        </td>
+        <td class="p-2.5 text-right">
+          
+            <button onclick="anularFactura(5)" class="px-2 py-0.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded font-semibold text-[11px] transition-colors">
+              Anular
+            </button>
+          
+        </td>
+      </tr>
+    </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- VISTA 3: CATÁLOGO & INVENTARIO -->
+    <!-- ============================================== -->
+    <section class="flex flex-col gap-3 h-full overflow-y-auto pr-1" id="view-stock">
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <span class="material-symbols-outlined text-blue-600">inventory_2</span> Catálogo Central de Inventario
+          </h2>
+          <p class="text-xs text-slate-500">Supervisión en tiempo real de 1,248 SKUs y alertas de stock mínimo</p>
+        </div>
+        <button class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition-colors" onclick="openNewProductModal()">
+          <span class="material-symbols-outlined text-sm">add</span> Nuevo Producto
+        </button>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-50 border-b border-slate-200 text-slate-400 uppercase font-bold text-[10px]">
+            <tr>
+              <th class="p-3">SKU &amp; Producto</th>
+              <th class="p-3">Categoría</th>
+              <th class="p-3 text-right">PVP ($)</th>
+              <th class="p-3 text-center">Stock Almacén</th>
+              <th class="p-3 text-right">Acción</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100" id="inventory-tbody">
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1550583724-b2692b85b150?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Leche Entera 1L</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775010</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">lacteos</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$4.50</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            42 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p1'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Aceite Vegetal 900ml</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775040</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">abarrotes</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$11.20</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            28 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p2'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1586201375761-83865001e31c?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Arroz Superior 1kg</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775050</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">abarrotes</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$5.80</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700">
+            3 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p3'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Refresco Cola Zero 1.5L</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775080</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">bebidas</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$7.50</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            64 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p4'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Pan Molde Blanco 500g</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775091</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">panaderia</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$6.20</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            19 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p5'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Galletas Crackers x6</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775023</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">snacks</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$3.80</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            50 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p6'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1585670270608-b404fb88821d?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Detergente Líquido 1.8L</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775077</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">limpieza</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$16.90</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            14 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p7'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1608270116805-4f7f6f076bf2?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Cerveza IPA 330ml</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775099</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">bebidas</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$8.90</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700">
+            2 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p8'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1488477181946-6428a0291777?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Yogurt Fresa 1kg</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775012</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">lacteos</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$9.40</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            22 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p9'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1452195100486-9cc805987862?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Queso Gouda 250g</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775015</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">lacteos</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$8.20</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            16 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p10'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1612927601601-6638404737ce?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Fideos Spaghetti 500g</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775042</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">abarrotes</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$3.20</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            75 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p11'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1534483509719-3feaee7c30da?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Atún Trozos en Aceite</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775045</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">abarrotes</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$6.80</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            35 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p12'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1548839140-29a749e1bc4e?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Agua Mineral 2.5L</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775082</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">bebidas</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$4.00</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            80 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p13'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1613478223719-2ab802602423?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Jugo Naranja 1L</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775085</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">bebidas</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$7.20</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            26 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p14'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Croissant Mantequilla x4</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775094</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">panaderia</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$5.50</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            12 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p15'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Baguette Rústica</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775096</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">panaderia</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$3.50</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            25 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p16'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1584824486509-112e4181ff6b?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Lavavajillas Limón 750ml</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775071</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">limpieza</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$7.90</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            30 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p17'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1563453392212-326f5e854473?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Limpiador Multiuso 900ml</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775073</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">limpieza</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$5.40</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            40 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p18'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Papas Onduladas BBQ 180g</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775025</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">snacks</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$4.80</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            45 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p19'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1536591375315-2a818c30d52b?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Mix Frutos Secos 200g</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775028</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">snacks</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$11.50</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            18 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p20'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Café Espresso Grano 250g</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775048</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">abarrotes</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$14.50</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            24 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p21'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Mantequilla con Sal 200g</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775018</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">lacteos</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$6.50</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            29 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p22'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1548907040-4baa42d10919?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Chocolate Bitter 70% 100g</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775029</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">snacks</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$6.90</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            38 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p23'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=360&amp;auto=format&amp;fit=crop&amp;q=80" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">Desinfectante Aerosol 360ml</span>
+              <span class="font-mono text-[10px] text-slate-400">SKU-775079</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">limpieza</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$12.80</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+            15 unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('p24'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- VISTA 4: EMPLEADOS & AUDITORÍA -->
+    <!-- ============================================== -->
+    <section class="flex flex-col gap-3 h-full overflow-y-auto pr-1 hidden" id="view-empleados">
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <span class="material-symbols-outlined text-blue-600">badge</span> Personal y Auditoría de Acciones
+          </h2>
+          <p class="text-xs text-slate-500">Gestión de credenciales RBAC y bitácora de transacciones</p>
+        </div>
+        <button class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg flex items-center gap-1 transition-colors" onclick="openNewUserModal()">
+          <span class="material-symbols-outlined text-sm">person_add</span> Nuevo Colaborador
+        </button>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs" id="team-cards-grid">
+      <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs space-y-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs">EM</div>
+            <div>
+              <h4 class="font-bold text-slate-900">Elena Morales</h4>
+              <span class="text-[10px] text-blue-600 font-semibold">Administradora</span>
+            </div>
+          </div>
+          <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-bold">Activo</span>
+        </div>
+        <div class="text-[11px] text-slate-500 pt-1 border-t border-slate-100">Control Total / Cierres Z / Anulaciones</div>
+      </div>
+    
+      <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs space-y-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-xs">RA</div>
+            <div>
+              <h4 class="font-bold text-slate-900">Rodrigo Alarcón</h4>
+              <span class="text-[10px] text-blue-600 font-semibold">Supervisor de Caja</span>
+            </div>
+          </div>
+          <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-bold">Activo</span>
+        </div>
+        <div class="text-[11px] text-slate-500 pt-1 border-t border-slate-100">Aperturas / Arqueos X / Descuentos 30%</div>
+      </div>
+    
+      <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs space-y-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-amber-500 text-white font-bold flex items-center justify-center text-xs">CV</div>
+            <div>
+              <h4 class="font-bold text-slate-900">Camila Valenzuela</h4>
+              <span class="text-[10px] text-blue-600 font-semibold">Cajera Turno Mañana</span>
+            </div>
+          </div>
+          <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-bold">Activo</span>
+        </div>
+        <div class="text-[11px] text-slate-500 pt-1 border-t border-slate-100">Cobro Estándar / Emisión de Boletas</div>
+      </div>
+    </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- VISTA 5: COMPRAS & PROVEEDORES -->
+    <!-- ============================================== -->
+    <section class="hidden flex flex-col gap-3 h-full overflow-y-auto pr-1" id="view-compras">
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <span class="material-symbols-outlined text-blue-600">local_shipping</span> Compras &amp; Proveedores
+          </h2>
+          <p class="text-xs text-slate-500">Recepción de mercancías y reposición automática</p>
+        </div>
+        <button class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg flex items-center gap-1 transition-colors" onclick="showToast('Abriendo asistente de orden de compra...', 'add_shopping_cart')">
+          <span class="material-symbols-outlined text-sm">add_shopping_cart</span> Nueva Orden
+        </button>
+      </div>
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs text-xs divide-y divide-slate-100" id="orders-list">
+        <div class="py-2.5 flex items-center justify-between">
+          <div>
+            <span class="font-bold text-slate-800">#OC-2024-039 - Lácteos del Sur C.A.</span>
+            <span class="text-slate-400 text-[11px] block">120 unidades de Leche Entera recepcionadas</span>
+          </div>
+          <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-[10px] font-bold">Completado</span>
+        </div>
+        <div class="py-2.5 flex items-center justify-between">
+          <div>
+            <span class="font-bold text-slate-800">#OC-2024-040 - Distribuidora Central S.A.</span>
+            <span class="text-slate-400 text-[11px] block">48 unidades Aceite Vegetal en camino</span>
+          </div>
+          <span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] font-bold">En Tránsito</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- VISTA 6: CLIENTES -->
+    <!-- ============================================== -->
+    <section class="hidden flex flex-col gap-3 h-full overflow-y-auto pr-1" id="view-clientes">
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <span class="material-symbols-outlined text-blue-600">group</span> Directorio de Clientes
+          </h2>
+          <p class="text-xs text-slate-500">Cuentas corrientes, facturación y puntos de fidelidad</p>
+        </div>
+        <button class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg flex items-center gap-1 transition-colors" onclick="openClientModal()">
+          <span class="material-symbols-outlined text-sm">person_add</span> Registrar Cliente
+        </button>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs" id="clients-card-list">
+      <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs space-y-2">
+        <div class="font-bold text-slate-900">Consumidor Final</div>
+        <p class="text-slate-400 text-[11px]">Sin registrar • Público General</p>
+        <button class="text-blue-600 font-bold hover:underline" onclick="selectClient('Consumidor Final', 'Sin registrar'); navigateTo('pos');">
+          Usar en POS
+        </button>
+      </div>
+    
+      <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs space-y-2">
+        <div class="font-bold text-slate-900">Carlos Mendoza Ruiz</div>
+        <p class="text-slate-400 text-[11px]">DNI: 47891234 • Cliente VIP</p>
+        <button class="text-blue-600 font-bold hover:underline" onclick="selectClient('Carlos Mendoza Ruiz', 'DNI: 47891234'); navigateTo('pos');">
+          Usar en POS
+        </button>
+      </div>
+    
+      <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs space-y-2">
+        <div class="font-bold text-slate-900">Distribuidora El Sol S.A.C.</div>
+        <p class="text-slate-400 text-[11px]">RUC: 20556677889 • Facturación Corporativa</p>
+        <button class="text-blue-600 font-bold hover:underline" onclick="selectClient('Distribuidora El Sol S.A.C.', 'RUC: 20556677889'); navigateTo('pos');">
+          Usar en POS
+        </button>
+      </div>
+    </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============================================== -->
+<!-- MODALES Y VENTANAS EMERGENTES INTERACTIVAS -->
+<!-- ============================================== -->
+
+<!-- 1. MODAL CHECKOUT EXITOSO -->
+<div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 hidden" id="modal-checkout-success">
+  <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl mx-4 space-y-3">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+      <div class="flex items-center gap-1.5">
+        <span class="material-symbols-outlined text-emerald-500 text-xl">check_circle</span>
+        <h3 class="font-bold text-slate-900 text-sm">¡Venta Cobrada con Éxito!</h3>
+      </div>
+      <button class="text-slate-400 hover:text-slate-600" onclick="closeModal('modal-checkout-success')">
+        <span class="material-symbols-outlined text-base">close</span>
+      </button>
+    </div>
+    <div class="bg-slate-50 p-3 rounded-xl border border-dashed border-slate-300 font-mono text-[11px] space-y-1.5 max-h-72 overflow-y-auto" id="ticket-preview-box">
+      <div class="text-center font-bold text-slate-800 text-xs">NexPOS RETAIL S.A.</div>
+      <div class="text-center text-[10px] text-slate-400">RUC: 20489182391 • Caja 01 - Turno Mañana</div>
+      <div class="text-center text-[10px] text-slate-400">15/9/2026 17:16</div>
+      <div class="border-b border-dashed border-slate-300 my-1.5"></div>
+      <div class="">Comprobante: #FAC-00892</div>
+      <div class="">Cliente: Consumidor Final</div>
+      <div class="">Doc: DNI/RUC: Sin registrar</div>
+      <div class="">Forma de Pago: CASH</div>
+      <div class="border-b border-dashed border-slate-300 my-1.5"></div>
+      <div class="space-y-1">
+        <div class="flex justify-between"><span class="">3x Leche Entera 1L</span><span class="">$12.82</span></div><div class="flex justify-between"><span class="">2x Aceite Vegetal 900ml</span><span class="">$22.40</span></div><div class="flex justify-between"><span class="">1x Detergente Líquido 1.8L</span><span class="">$15.21</span></div><div class="flex justify-between"><span class="">4x Refresco Cola Zero 1.5L</span><span class="">$30.00</span></div>
+      </div>
+      <div class="border-b border-dashed border-slate-300 my-1.5"></div>
+      <div class="flex justify-between font-bold text-slate-800 text-xs"><span class="">TOTAL COBRADO:</span><span class="">$90.17</span></div>
+      <div class="flex justify-between text-slate-500"><span class="">Monto Recibido:</span><span class="">$100.00</span></div>
+      <div class="flex justify-between text-slate-500"><span class="">Cambio / Vuelto:</span><span class="text-emerald-600 font-bold">$9.83</span></div>
+      <div class="border-b border-dashed border-slate-300 my-1.5"></div>
+      <div class="text-center text-[10px] text-slate-400 italic">¡Gracias por su compra! Comprobante fiscal electrónico.</div>
+    </div>
+    <div class="flex gap-2 pt-1">
+      <button class="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg flex items-center justify-center gap-1 transition-colors" onclick="printReceipt()">
+        <span class="material-symbols-outlined text-sm">print</span> Imprimir Ticket
+      </button>
+      <button class="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-xs flex items-center justify-center gap-1 transition-colors" onclick="resetNewSale()">
+        <span class="material-symbols-outlined text-sm">add</span> Nueva Venta
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 2. MODAL ATAJOS DE TECLADO (F1-F12) -->
+<div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 hidden" id="modal-shortcuts">
+  <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl mx-4 space-y-3.5">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-blue-600 text-xl">keyboard</span>
+        <h3 class="font-bold text-slate-900 text-sm">Atajos de Teclado del Terminal</h3>
+      </div>
+      <button class="text-slate-400 hover:text-slate-600" onclick="closeModal('modal-shortcuts')">
+        <span class="material-symbols-outlined text-base">close</span>
+      </button>
+    </div>
+    <div class="grid grid-cols-2 gap-2 text-xs">
+      <div class="p-2 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between">
+        <span class="text-slate-600">Cobrar e Imprimir</span>
+        <kbd class="px-2 py-0.5 bg-white rounded border border-slate-300 font-mono font-bold text-blue-600 shadow-xs">F12</kbd>
+      </div>
+      <div class="p-2 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between">
+        <span class="text-slate-600">Búsqueda rápida</span>
+        <kbd class="px-2 py-0.5 bg-white rounded border border-slate-300 font-mono font-bold text-blue-600 shadow-xs">F2</kbd>
+      </div>
+      <div class="p-2 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between">
+        <span class="text-slate-600">Descuento Promo</span>
+        <kbd class="px-2 py-0.5 bg-white rounded border border-slate-300 font-mono font-bold text-blue-600 shadow-xs">F4</kbd>
+      </div>
+      <div class="p-2 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between">
+        <span class="text-slate-600">Anular Ticket</span>
+        <kbd class="px-2 py-0.5 bg-white rounded border border-slate-300 font-mono font-bold text-rose-600 shadow-xs">ESC</kbd>
+      </div>
+      <div class="p-2 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between">
+        <span class="text-slate-600">Pago Efectivo</span>
+        <kbd class="px-2 py-0.5 bg-white rounded border border-slate-300 font-mono font-bold text-slate-700 shadow-xs">F6</kbd>
+      </div>
+      <div class="p-2 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between">
+        <span class="text-slate-600">Pago Tarjeta</span>
+        <kbd class="px-2 py-0.5 bg-white rounded border border-slate-300 font-mono font-bold text-slate-700 shadow-xs">F7</kbd>
+      </div>
+    </div>
+    <div class="flex justify-end pt-1">
+      <button class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors" onclick="closeModal('modal-shortcuts')">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<!-- 3. MODAL TURNO / ARQUEO CAJA 01 -->
+<div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 hidden" id="modal-turno">
+  <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl mx-4 space-y-3">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+      <div class="flex items-center gap-1.5">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        <h3 class="font-bold text-slate-900 text-sm">Estado de Caja 01 - Turno Mañana</h3>
+      </div>
+      <button class="text-slate-400 hover:text-slate-600" onclick="closeModal('modal-turno')">
+        <span class="material-symbols-outlined text-base">close</span>
+      </button>
+    </div>
+    <div class="space-y-2 text-xs">
+      <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 space-y-1">
+        <div class="flex justify-between"><span class="text-slate-500">Cajero Activo:</span><span class="font-bold text-slate-800">Elena Morales</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Apertura:</span><span class="font-mono text-slate-800 font-semibold">08:00 AM</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Fondo Inicial:</span><span class="font-mono text-slate-800 font-semibold">$150.00</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Efectivo en Gaveta:</span><span class="font-mono text-emerald-600 font-bold">$1,570.50</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Tickets Emitidos:</span><span class="font-bold text-slate-800" id="turno-ticket-count">85</span></div>
+      </div>
+      <p class="text-[11px] text-emerald-600 font-semibold">Gaveta física cuadrada al 100% sin faltantes ni sobrantes.</p>
+    </div>
+    <div class="flex gap-2 pt-2 border-t border-slate-100">
+      <button class="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors" onclick="navigateTo('caja'); closeModal('modal-turno');">Ver Detalle Caja</button>
+      <button class="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors" onclick="showToast('Generando reporte Z de cierre...', 'lock'); closeModal('modal-turno');">Cierre Definitivo (Z)</button>
+    </div>
+  </div>
+</div>
+
+<!-- 4. MODAL ÍTEM MANUAL -->
+<div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50" id="modal-manual-item">
+  <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl mx-4 space-y-3">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+      <div class="flex items-center gap-1.5">
+        <span class="material-symbols-outlined text-blue-600 text-xl">add_circle</span>
+        <h3 class="font-bold text-slate-900 text-sm">Agregar Ítem Manual</h3>
+      </div>
+      <button class="text-slate-400 hover:text-slate-600" onclick="closeModal('modal-manual-item')"><span class="material-symbols-outlined text-base">close</span></button>
+    </div>
+    <form class="space-y-2.5 text-xs" onsubmit="handleManualSubmit(event)">
+      <div>
+        <label class="font-semibold text-slate-700 block mb-1">Nombre / Descripción</label>
+        <input class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:bg-white focus:ring-1 focus:ring-blue-600 focus:outline-none" id="manual-prod-name" placeholder="Ej. Empaque para regalo especial" required="" type="text">
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="font-semibold text-slate-700 block mb-1">Precio ($)</label>
+          <input class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono focus:bg-white focus:ring-1 focus:ring-blue-600 focus:outline-none" id="manual-prod-price" min="0.05" placeholder="5.00" required="" step="0.01" type="number">
+        </div>
+        <div>
+          <label class="font-semibold text-slate-700 block mb-1">Cantidad</label>
+          <input class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono focus:bg-white focus:ring-1 focus:ring-blue-600 focus:outline-none" id="manual-prod-qty" min="1" required="" type="number" value="1">
+        </div>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button class="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition-colors" onclick="closeModal('modal-manual-item')" type="button">Cancelar</button>
+        <button class="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors shadow-xs" type="submit">Agregar al Ticket</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 5. MODAL PROMO / DESCUENTO (F4) -->
+<div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 hidden" id="modal-promo">
+  <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl mx-4 space-y-3">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+      <div class="flex items-center gap-1.5">
+        <span class="material-symbols-outlined text-emerald-600 text-xl">percent</span>
+        <h3 class="font-bold text-slate-900 text-sm">Aplicar Descuento o Promoción (F4)</h3>
+      </div>
+      <button class="text-slate-400 hover:text-slate-600" onclick="closeModal('modal-promo')"><span class="material-symbols-outlined text-base">close</span></button>
+    </div>
+    <div class="space-y-2 text-xs">
+      <span class="font-semibold text-slate-700 block">Promociones Rápidas:</span>
+      <div class="grid grid-cols-2 gap-2">
+        <button class="p-2 text-left rounded-lg border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 transition-colors" onclick="applyDiscount(5, 'Descuento Promoción (-5%):')">
+          <div class="font-bold text-slate-800 text-xs">Promo General</div>
+          <div class="text-emerald-600 font-bold text-[11px]">-5% en total</div>
+        </button>
+        <button class="p-2 text-left rounded-lg border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 transition-colors" onclick="applyDiscount(10, 'Martes Especial (-10%):')">
+          <div class="font-bold text-slate-800 text-xs">Martes 10% OFF</div>
+          <div class="text-emerald-600 font-bold text-[11px]">-10% en total</div>
+        </button>
+        <button class="p-2 text-left rounded-lg border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 transition-colors" onclick="applyDiscount(15, 'Cliente Frecuente (-15%):')">
+          <div class="font-bold text-slate-800 text-xs">Cliente VIP</div>
+          <div class="text-emerald-600 font-bold text-[11px]">-15% en total</div>
+        </button>
+        <button class="p-2 text-left rounded-lg border border-slate-200 hover:border-rose-400 hover:bg-rose-50/50 transition-colors" onclick="applyDiscount(0, 'Sin descuento (0%):')">
+          <div class="font-bold text-slate-800 text-xs">Quitar Descuento</div>
+          <div class="text-slate-400 font-semibold text-[11px]">0%</div>
+        </button>
+      </div>
+      <div class="pt-2 border-t border-slate-100">
+        <label class="font-semibold text-slate-700 block mb-1">Porcentaje Manual:</label>
+        <div class="flex gap-2">
+          <input class="flex-1 px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono focus:bg-white focus:ring-1 focus:ring-blue-600 focus:outline-none" id="input-custom-promo" max="100" min="0" placeholder="Ej. 20" type="number">
+          <button class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition-colors" onclick="applyCustomPromo()">Aplicar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 6. MODAL CAMBIAR / REGISTRAR CLIENTE -->
+<div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 hidden" id="modal-client">
+  <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl mx-4 space-y-3">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+      <div class="flex items-center gap-1.5">
+        <span class="material-symbols-outlined text-blue-600 text-xl">person_search</span>
+        <h3 class="font-bold text-slate-900 text-sm">Asignar Cliente al Ticket</h3>
+      </div>
+      <button class="text-slate-400 hover:text-slate-600" onclick="closeModal('modal-client')"><span class="material-symbols-outlined text-base">close</span></button>
+    </div>
+    <div class="space-y-2 text-xs"><div class="p-2.5 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-base">person_off</span></div><div><p class="font-bold text-xs text-blue-900">Consumidor Final (Sin Registro)</p><p class="text-[10px] text-blue-600 font-medium">Público General • Boleta rápida</p></div></div><button onclick="selectClient('Consumidor Final', 'DNI/RUC: Sin registrar'); showToast('Cliente: Consumidor Final (Sin registro)', 'person'); closeModal('modal-client');" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition-colors shadow-xs flex items-center gap-1"><span class="material-symbols-outlined text-xs font-bold">check</span> Asignar</button></div><span class="font-semibold text-slate-700 block text-[11px] pt-1">Clientes Frecuentes Registrados:</span><div class="space-y-1 max-h-36 overflow-y-auto"><div class="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer flex items-center justify-between transition-colors" onclick="selectClient('Carlos Mendoza Ruiz', 'DNI: 47891234'); closeModal('modal-client');"><div><p class="font-bold text-slate-800">Carlos Mendoza Ruiz</p><p class="text-[10px] text-slate-400">DNI: 47891234 • Cliente VIP</p></div><span class="text-blue-600 font-bold text-xs">Seleccionar</span></div><div class="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer flex items-center justify-between transition-colors" onclick="selectClient('Distribuidora El Sol S.A.C.', 'RUC: 20556677889'); closeModal('modal-client');"><div><p class="font-bold text-slate-800">Distribuidora El Sol S.A.C.</p><p class="text-[10px] text-slate-400">RUC: 20556677889 • Factura</p></div><span class="text-blue-600 font-bold text-xs">Seleccionar</span></div></div><div class="pt-2 border-t border-slate-100"><span class="font-semibold text-slate-700 block text-[11px] mb-1">Registrar Nuevo Cliente Rápido:</span><form class="space-y-2" onsubmit="event.preventDefault(); var n = document.getElementById('modal-client-name').value.trim(); var d = document.getElementById('modal-client-doc').value.trim(); if(n &amp;&amp; d){ document.getElementById('client-name-display').textContent = n; document.getElementById('client-doc-display').textContent = 'DNI/RUC: ' + d; var b = document.getElementById('client-badge-status'); if(b) b.textContent = 'Registrado'; document.getElementById('modal-client').classList.add('hidden'); if(typeof showToast === 'function') showToast('Cliente guardado y asignado al ticket', 'person'); } return false;"><input class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:bg-white focus:ring-1 focus:ring-blue-600 focus:outline-none" id="modal-client-name" placeholder="Nombre / Razón Social" required="" type="text"><input class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono focus:bg-white focus:ring-1 focus:ring-blue-600 focus:outline-none" id="modal-client-doc" placeholder="DNI o RUC" required="" type="text"><button class="w-full py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors" type="submit">Asignar y Guardar</button></form></div></div>
+  </div>
+</div>
+
+<!-- 7. MODAL CONFIRMAR ANULACIÓN -->
+<div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 hidden" id="modal-anular">
+  <div class="bg-white rounded-2xl max-w-xs w-full p-5 shadow-2xl mx-4 space-y-3 text-center">
+    <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+      <span class="material-symbols-outlined text-2xl">delete_sweep</span>
+    </div>
+    <div>
+      <h3 class="font-bold text-slate-900 text-sm">¿Anular ticket actual?</h3>
+      <p class="text-xs text-slate-500 mt-1">Se vaciará el carrito y se cancelará la venta en curso.</p>
+    </div>
+    <div class="flex gap-2 pt-1">
+      <button class="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs transition-colors" onclick="closeModal('modal-anular')">Cancelar</button>
+      <button class="flex-1 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-xs transition-colors" onclick="confirmAnularCart()">Sí, Anular</button>
+    </div>
+  </div>
+</div>
+
+<!-- 8. MODAL NUEVO EMPLEADO -->
+<div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 hidden" id="modal-new-user">
+  <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl mx-4 space-y-3">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+      <div class="flex items-center gap-1.5">
+        <span class="material-symbols-outlined text-blue-600 text-xl">person_add</span>
+        <h3 class="font-bold text-slate-900 text-sm">Nuevo Colaborador POS</h3>
+      </div>
+      <button class="text-slate-400 hover:text-slate-600" onclick="closeModal('modal-new-user')"><span class="material-symbols-outlined text-base">close</span></button>
+    </div>
+    <form class="space-y-2 text-xs" onsubmit="handleNewUser(event)">
+      <div>
+        <label class="font-semibold text-slate-700 block mb-1">Nombre Completo</label>
+        <input class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:bg-white focus:ring-1 focus:ring-blue-600 focus:outline-none" id="user-name" placeholder="Ej. Mateo Gómez" required="" type="text">
+      </div>
+      <div>
+        <label class="font-semibold text-slate-700 block mb-1">Rol</label>
+        <select class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:bg-white focus:ring-1 focus:ring-blue-600 focus:outline-none" id="user-role-select">
+          <option value="Cajero">Cajero</option>
+          <option value="Supervisor de Caja">Supervisor de Caja</option>
+          <option value="Administrador">Administrador</option>
+        </select>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button class="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition-colors" onclick="closeModal('modal-new-user')" type="button">Cancelar</button>
+        <button class="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors" type="submit">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div><!-- 9. MODAL NUEVO PRODUCTO COMPLETO -->
+<div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 hidden" id="modal-new-product">
+  <div class="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl mx-4 space-y-3.5 max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+          <span class="material-symbols-outlined text-lg">add_box</span>
+        </div>
+        <div>
+          <h3 class="font-bold text-slate-900 text-sm">Registrar Nuevo Producto en Catálogo</h3>
+          <p class="text-[11px] text-slate-500">Ingresa las especificaciones, códigos, precios y existencias iniciales</p>
+        </div>
+      </div>
+      <button class="text-slate-400 hover:text-slate-600 transition-colors" onclick="closeModal('modal-new-product')">
+        <span class="material-symbols-outlined text-base">close</span>
+      </button>
+    </div>
+
+    <form class="space-y-3 text-xs" id="form-new-product" onsubmit="handleNewProductSubmit(event)">
+      <!-- 1. Carga de Imagen & Dropzone -->
+      <div>
+        <label class="font-semibold text-slate-700 block mb-1">Fotografía del Producto</label>
+        <div class="flex gap-3 items-center">
+          <div class="w-20 h-20 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden relative shrink-0 flex items-center justify-center group" id="new-prod-img-preview-box">
+            <img id="new-prod-img-preview" src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=360&amp;auto=format&amp;fit=crop&amp;q=80" alt="Vista Previa" class="w-full h-full object-cover">
+          </div>
+          <div class="flex-1">
+            <div class="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-xl p-2.5 text-center cursor-pointer transition-colors bg-slate-50 hover:bg-blue-50/50" onclick="document.getElementById('new-prod-img-input').click()">
+              <span class="material-symbols-outlined text-blue-600 text-xl block mb-0.5">cloud_upload</span>
+              <p class="text-[11px] font-semibold text-slate-700">Arrastra o haz clic para subir imagen</p>
+              <p class="text-[10px] text-slate-400">PNG, JPG o WebP hasta 2MB</p>
+              <input type="file" id="new-prod-img-input" class="hidden" accept="image/*" onchange="handleProductImageUpload(event)">
+            </div>
+            <input type="hidden" id="new-prod-img-url" value="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=360&amp;auto=format&amp;fit=crop&amp;q=80">
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Códigos: SKU y EAN -->
+      <div class="grid grid-cols-2 gap-2.5 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="font-semibold text-slate-700">Código SKU</label>
+            <button type="button" onclick="generateSKU()" class="text-[10px] text-blue-600 hover:underline font-semibold flex items-center gap-0.5">
+              <span class="material-symbols-outlined text-[11px]">autorenew</span> Auto
+            </button>
+          </div>
+          <input class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-semibold focus:ring-1 focus:ring-blue-600 focus:outline-none" id="new-prod-sku" placeholder="SKU-775100" required="" type="text">
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="font-semibold text-slate-700">Código Barras (EAN)</label>
+            <button type="button" onclick="simulateBarcodeScan()" class="text-[10px] text-emerald-600 hover:underline font-semibold flex items-center gap-0.5">
+              <span class="material-symbols-outlined text-[11px]">barcode_scanner</span> Simular
+            </button>
+          </div>
+          <input class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-semibold focus:ring-1 focus:ring-blue-600 focus:outline-none" id="new-prod-ean" placeholder="7750998811" required="" type="text">
+        </div>
+      </div>
+
+      <!-- 3. Nombre, Categoría y Unidad -->
+      <div>
+        <label class="font-semibold text-slate-700 block mb-1">Nombre Comercial del Producto</label>
+        <input class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:bg-white focus:ring-1 focus:ring-blue-600 focus:outline-none" id="new-prod-name" placeholder="Ej. Cereal Integral con Miel 400g" required="" type="text">
+      </div>
+
+      <div class="grid grid-cols-2 gap-2.5">
+        <div>
+          <label class="font-semibold text-slate-700 block mb-1">Categoría</label>
+          <select class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:bg-white focus:ring-1 focus:ring-blue-600 focus:outline-none" id="new-prod-cat">
+            <option value="abarrotes">Abarrotes</option>
+            <option value="bebidas">Bebidas</option>
+            <option value="lacteos">Lácteos</option>
+            <option value="panaderia">Panadería</option>
+            <option value="limpieza">Limpieza</option>
+            <option value="snacks">Snacks</option>
+          </select>
+        </div>
+        <div>
+          <label class="font-semibold text-slate-700 block mb-1">Unidad de Medida</label>
+          <select class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:bg-white focus:ring-1 focus:ring-blue-600 focus:outline-none" id="new-prod-unit">
+            <option value="Unidad (und)">Unidad (und)</option>
+            <option value="Kilogramo (kg)">Kilogramo (kg)</option>
+            <option value="Litro (lt)">Litro (lt)</option>
+            <option value="Paquete (pqt)">Paquete (pqt)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 4. Precios & Margen de Ganancia -->
+      <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-2">
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="font-semibold text-slate-700 block mb-1">Precio Costo ($)</label>
+            <input class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-600 focus:outline-none" id="new-prod-cost" min="0" oninput="calcProfitMargin()" placeholder="3.20" step="0.01" type="number" value="3.20">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-700 block mb-1">Precio Venta PVP ($)</label>
+            <input class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-blue-700 focus:ring-1 focus:ring-blue-600 focus:outline-none" id="new-prod-price" min="0.10" oninput="calcProfitMargin()" placeholder="5.50" required="" step="0.01" type="number" value="5.50">
+          </div>
+        </div>
+        <div class="flex items-center justify-between pt-1 text-[11px] border-t border-slate-200">
+          <span class="text-slate-500 font-medium">Margen Estimado de Ganancia:</span>
+          <span class="font-mono font-bold text-emerald-600" id="new-prod-margin-display">+41.8% ($2.30)</span>
+        </div>
+      </div>
+
+      <!-- 5. Control de Stock Inicial y Mínimo -->
+      <div class="grid grid-cols-2 gap-2.5">
+        <div>
+          <label class="font-semibold text-slate-700 block mb-1">Stock Inicial Almacén</label>
+          <input class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono focus:bg-white focus:ring-1 focus:ring-blue-600 focus:outline-none" id="new-prod-stock" min="0" placeholder="30" required="" type="number" value="30">
+        </div>
+        <div>
+          <label class="font-semibold text-slate-700 block mb-1">Stock Mínimo de Alerta</label>
+          <input class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono focus:bg-white focus:ring-1 focus:ring-blue-600 focus:outline-none" id="new-prod-min-stock" min="1" placeholder="5" required="" type="number" value="5">
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2 border-t border-slate-100">
+        <button class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition-colors" onclick="closeModal('modal-new-product')" type="button">Cancelar</button>
+        <button class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors shadow-xs flex items-center justify-center gap-1.5" type="submit">
+          <span class="material-symbols-outlined text-sm font-bold">check</span> Guardar Producto
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- JAVASCRIPT COMPLETO E INTERACTIVO -->
+<script>
+  // 1. BASE DE DATOS DE PRODUCTOS (24 PRODUCTOS EXACTOS PARA CUADRÍCULA 4x3)
+  const products = [
+    { id: 'p1', name: 'Leche Entera 1L', price: 4.50, stock: 42, cat: 'lacteos', sku: 'SKU-775010', ean: '7750102030', img: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=360&auto=format&fit=crop&q=80' },
+    { id: 'p2', name: 'Aceite Vegetal 900ml', price: 11.20, stock: 28, cat: 'abarrotes', sku: 'SKU-775040', ean: '7750401011', img: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=360&auto=format&fit=crop&q=80' },
+    { id: 'p3', name: 'Arroz Superior 1kg', price: 5.80, stock: 3, cat: 'abarrotes', sku: 'SKU-775050', ean: '7750508821', low: true, img: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=360&auto=format&fit=crop&q=80' },
+    { id: 'p4', name: 'Refresco Cola Zero 1.5L', price: 7.50, stock: 64, cat: 'bebidas', sku: 'SKU-775080', ean: '7750809932', img: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=360&auto=format&fit=crop&q=80' },
+    { id: 'p5', name: 'Pan Molde Blanco 500g', price: 6.20, stock: 19, cat: 'panaderia', sku: 'SKU-775091', ean: '7750912384', img: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=360&auto=format&fit=crop&q=80' },
+    { id: 'p6', name: 'Galletas Crackers x6', price: 3.80, stock: 50, cat: 'snacks', sku: 'SKU-775023', ean: '7750239912', img: 'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=360&auto=format&fit=crop&q=80' },
+    { id: 'p7', name: 'Detergente Líquido 1.8L', price: 16.90, stock: 14, cat: 'limpieza', sku: 'SKU-775077', ean: '7750774431', img: 'https://images.unsplash.com/photo-1585670270608-b404fb88821d?w=360&auto=format&fit=crop&q=80' },
+    { id: 'p8', name: 'Cerveza IPA 330ml', price: 8.90, stock: 2, cat: 'bebidas', sku: 'SKU-775099', ean: '7750993321', low: true, img: 'https://images.unsplash.com/photo-1608270116805-4f7f6f076bf2?w=360&auto=format&fit=crop&q=80' },
+    { id: 'p9', name: 'Yogurt Fresa 1kg', price: 9.40, stock: 22, cat: 'lacteos', sku: 'SKU-775012', ean: '7750123301', img: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=360&auto=format&fit=crop&q=80' },
+    { id: 'p10', name: 'Queso Gouda 250g', price: 8.20, stock: 16, cat: 'lacteos', sku: 'SKU-775015', ean: '7750154402', img: 'https://images.unsplash.com/photo-1452195100486-9cc805987862?w=360&auto=format&fit=crop&q=80' },
+    { id: 'p11', name: 'Fideos Spaghetti 500g', price: 3.20, stock: 75, cat: 'abarrotes', sku: 'SKU-775042', ean: '7750425511', img: 'https://images.unsplash.com/photo-1612927601601-6638404737ce?w=360&auto=format&fit=crop&q=80' },
+    { id: 'p12', name: 'Atún Trozos en Aceite', price: 6.80, stock: 35, cat: 'abarrotes', sku: 'SKU-775045', ean: '7750458820', img: 'https://images.unsplash.com/photo-1534483509719-3feaee7c30da?w=360&auto=format&fit=crop&q=80' },
+    // Página 2 (12 adicionales)
+    { id: 'p13', name: 'Agua Mineral 2.5L', price: 4.00, stock: 80, cat: 'bebidas', sku: 'SKU-775082', ean: '7750824419', img: 'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?w=360&auto=format&fit=crop&q=80' },
+    { id: 'p14', name: 'Jugo Naranja 1L', price: 7.20, stock: 26, cat: 'bebidas', sku: 'SKU-775085', ean: '7750859910', img: 'https://images.unsplash.com/photo-1613478223719-2ab802602423?w=360&auto=format&fit=crop&q=80' },
+    { id: 'p15', name: 'Croissant Mantequilla x4', price: 5.50, stock: 12, cat: 'panaderia', sku: 'SKU-775094', ean: '7750940023', img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=360&auto=format&fit=crop&q=80' },
+    { id: 'p16', name: 'Baguette Rústica', price: 3.50, stock: 25, cat: 'panaderia', sku: 'SKU-775096', ean: '7750961129', img: 'https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=360&auto=format&fit=crop&q=80' },
+    { id: 'p17', name: 'Lavavajillas Limón 750ml', price: 7.90, stock: 30, cat: 'limpieza', sku: 'SKU-775071', ean: '7750713309', img: 'https://images.unsplash.com/photo-1584824486509-112e4181ff6b?w=360&auto=format&fit=crop&q=80' },
+    { id: 'p18', name: 'Limpiador Multiuso 900ml', price: 5.40, stock: 40, cat: 'limpieza', sku: 'SKU-775073', ean: '7750737718', img: 'https://images.unsplash.com/photo-1563453392212-326f5e854473?w=360&auto=format&fit=crop&q=80' },
+    { id: 'p19', name: 'Papas Onduladas BBQ 180g', price: 4.80, stock: 45, cat: 'snacks', sku: 'SKU-775025', ean: '7750256601', img: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=360&auto=format&fit=crop&q=80' },
+    { id: 'p20', name: 'Mix Frutos Secos 200g', price: 11.50, stock: 18, cat: 'snacks', sku: 'SKU-775028', ean: '7750289943', img: 'https://images.unsplash.com/photo-1536591375315-2a818c30d52b?w=360&auto=format&fit=crop&q=80' },
+    { id: 'p21', name: 'Café Espresso Grano 250g', price: 14.50, stock: 24, cat: 'abarrotes', sku: 'SKU-775048', ean: '7750482200', img: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=360&auto=format&fit=crop&q=80' },
+    { id: 'p22', name: 'Mantequilla con Sal 200g', price: 6.50, stock: 29, cat: 'lacteos', sku: 'SKU-775018', ean: '7750189912', img: 'https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?w=360&auto=format&fit=crop&q=80' },
+    { id: 'p23', name: 'Chocolate Bitter 70% 100g', price: 6.90, stock: 38, cat: 'snacks', sku: 'SKU-775029', ean: '7750294401', img: 'https://images.unsplash.com/photo-1548907040-4baa42d10919?w=360&auto=format&fit=crop&q=80' },
+    { id: 'p24', name: 'Desinfectante Aerosol 360ml', price: 12.80, stock: 15, cat: 'limpieza', sku: 'SKU-775079', ean: '7750798831', img: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=360&auto=format&fit=crop&q=80' }
+  ];
+
+  // 2. ESTADO GENERAL
+  const PAGE_SIZE = 12;
+  let currentPage = 1;
+  let activeCategory = 'todos';
+  let searchTerm = '';
+  let discountPct = 5;
+  let discountLabelText = 'Descuento Promoción (-5%):';
+  let payMethod = 'cash';
+  let ticketCounter = 892;
+
+  let currentClient = {
+    name: 'Consumidor Final',
+    doc: 'DNI/RUC: Sin registrar'
+  };
+
+  // Carrito inicial que coincide exactamente con el screenshot
+  let cart = [
+    { id: 'p1', name: 'Leche Entera 1L', price: 4.50, qty: 3, discount: 5 },
+    { id: 'p2', name: 'Aceite Vegetal 900ml', price: 11.20, qty: 2, discount: 0 },
+    { id: 'p7', name: 'Detergente Líquido 1.8L', price: 16.90, qty: 1, discount: 10 },
+    { id: 'p4', name: 'Refresco Cola Zero 1.5L', price: 7.50, qty: 4, discount: 0 }
+  ];
+
+  let invoices = [
+    { id: 'FAC-002341', time: 'Hoy, 13:42', customer: 'Farmacias Unidas S.A.', method: 'Efectivo', total: 145.20, status: 'emitida' },
+    { id: 'FAC-002340', time: 'Hoy, 13:15', customer: 'Roberto Sánchez', method: 'Tarjeta POS', total: 312.00, status: 'emitida' },
+    { id: 'FAC-002339', time: 'Hoy, 12:40', customer: 'Consumidor Final', method: 'Efectivo', total: 58.50, status: 'anulada' },
+    { id: 'FAC-002338', time: 'Hoy, 11:58', customer: 'Clínica Dental Moderna', method: 'Transferencia Directa', total: 210.00, status: 'emitida' },
+    { id: 'FAC-002337', time: 'Hoy, 10:20', customer: 'Distribuidora del Sur Cía.', method: 'Efectivo', total: 512.80, status: 'emitida' }
+  ];
+
+  let teamMembers = [
+    { name: 'Elena Morales', role: 'Administradora', perms: 'Control Total / Cierres Z / Anulaciones', status: 'Activo', bg: 'bg-blue-600', init: 'EM' },
+    { name: 'Rodrigo Alarcón', role: 'Supervisor de Caja', perms: 'Aperturas / Arqueos X / Descuentos 30%', status: 'Activo', bg: 'bg-emerald-600', init: 'RA' },
+    { name: 'Camila Valenzuela', role: 'Cajera Turno Mañana', perms: 'Cobro Estándar / Emisión de Boletas', status: 'Activo', bg: 'bg-amber-500', init: 'CV' }
+  ];
+
+  let clientsList = [
+    { name: 'Consumidor Final', doc: 'Sin registrar', desc: 'Público General' },
+    { name: 'Carlos Mendoza Ruiz', doc: 'DNI: 47891234', desc: 'Cliente VIP' },
+    { name: 'Distribuidora El Sol S.A.C.', doc: 'RUC: 20556677889', desc: 'Facturación Corporativa' }
+  ];
+
+  // 3. NAVEGACIÓN ENTRE VISTAS
+  function navigateTo(viewId) {
+    ['pos', 'caja', 'stock', 'empleados', 'compras', 'clientes'].forEach(id => {
+      const el = document.getElementById(`view-${id}`);
+      if (el) el.classList.add('hidden');
+    });
+
+    const target = document.getElementById(`view-${viewId}`);
+    if (target) target.classList.remove('hidden');
+
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.className = 'nav-btn w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg font-medium transition-all text-slate-600 hover:bg-slate-100 hover:text-slate-900';
+    });
+
+    const activeNav = document.getElementById(`nav-${viewId}`);
+    if (activeNav) {
+      activeNav.className = 'nav-btn w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg font-medium transition-all bg-blue-600 text-white shadow-xs';
+    }
+
+    showToast(`Módulo: ${viewId.toUpperCase()}`);
+  }
+
+  // 4. TOAST NOTIFICACIÓN
+  let toastTimer;
+  function showToast(text, icon = 'check_circle') {
+    const toast = document.getElementById('toast');
+    const toastText = document.getElementById('toast-text');
+    const toastIcon = document.getElementById('toast-icon');
+    if (!toast) return;
+
+    toastText.textContent = text;
+    toastIcon.textContent = icon;
+    toast.classList.remove('translate-y-20', 'opacity-0');
+
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.classList.add('translate-y-20', 'opacity-0');
+    }, 2400);
+  }
+
+  // 5. RENDERIZADO DE PRODUCTOS EN CUADRÍCULA 4x3
+  function getFilteredProducts() {
+    let list = products;
+    if (activeCategory !== 'todos') {
+      list = list.filter(p => p.cat === activeCategory);
+    }
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase().trim();
+      list = list.filter(p => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || p.ean.includes(q));
+    }
+    return list;
+  }
+
+  function renderPosGrid() {
+    const grid = document.getElementById('pos-products-grid');
+    if (!grid) return;
+
+    const list = getFilteredProducts();
+    const total = list.length;
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const end = Math.min(start + PAGE_SIZE, total);
+    const pageItems = list.slice(start, end);
+
+    if (total === 0) {
+      grid.innerHTML = `
+        <div class="col-span-4 row-span-3 flex flex-col items-center justify-center p-6 text-center bg-white rounded-xl border border-dashed border-slate-300">
+          <span class="material-symbols-outlined text-4xl text-slate-300 mb-1">search_off</span>
+          <p class="text-xs font-bold text-slate-700">Sin productos coincidentes</p>
+          <p class="text-[11px] text-slate-400">Intenta con otro término o categoría</p>
+        </div>
+      `;
+    } else {
+      let cardsHTML = pageItems.map(p => `
+        <div onclick="addToCart('${p.id}')" class="bg-white rounded-xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group relative overflow-hidden h-full p-2 active:scale-[0.98]">
+          <div class="flex flex-col gap-1 min-h-0 flex-1">
+            <div class="relative w-full h-24 rounded-lg overflow-hidden bg-slate-100 shrink-0">
+              <img src="${p.img}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+              <span class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-slate-900/80 backdrop-blur-xs text-white font-mono text-[9px] font-semibold uppercase tracking-wider shadow-xs">
+                ${p.sku}
+              </span>
+              <span class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold leading-none shadow-xs ${p.low ? 'bg-amber-500 text-white' : 'bg-emerald-600 text-white'}">
+                Stock: ${p.stock}
+              </span>
+            </div>
+            <div class="pt-0.5">
+              <h4 class="text-xs font-semibold text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-1 leading-snug" title="${p.name}">
+                ${p.name}
+              </h4>
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-1 mt-0.5 border-t border-slate-100 shrink-0">
+            <span class="text-sm font-extrabold text-blue-700 font-mono tracking-tight">$${p.price.toFixed(2)}</span>
+            <button onclick="event.stopPropagation(); addToCart('${p.id}');" class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors shadow-xs" title="Añadir al ticket">
+              <span class="material-symbols-outlined text-sm font-bold">add</span>
+            </button>
+          </div>
+        </div>
+      `).join('');
+
+      // Rellenar espacios vacíos para conservar cuadrícula simétrica de 12 tarjetas
+      const emptySlots = PAGE_SIZE - pageItems.length;
+      for (let i = 0; i < emptySlots; i++) {
+        cardsHTML += `<div class="hidden sm:block pointer-events-none rounded-xl border border-transparent" aria-hidden="true"></div>`;
+      }
+      grid.innerHTML = cardsHTML;
+    }
+
+    // Actualizar barra de paginación
+    document.getElementById('page-range').textContent = total === 0 ? '0' : `${start + 1}-${end}`;
+    document.getElementById('total-prods').textContent = total;
+    document.getElementById('current-page-num').textContent = currentPage;
+    document.getElementById('total-pages-num').textContent = totalPages;
+
+    document.getElementById('btn-prev').disabled = currentPage <= 1;
+    document.getElementById('btn-next').disabled = currentPage >= totalPages;
+
+    let pills = '';
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === currentPage) {
+        pills += `<button class="w-6 h-6 rounded bg-blue-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">${i}</button>`;
+      } else {
+        pills += `<button onclick="goToPage(${i})" class="w-6 h-6 rounded border border-slate-200 text-slate-600 hover:bg-slate-100 font-semibold text-xs flex items-center justify-center transition-colors">${i}</button>`;
+      }
+    }
+    document.getElementById('pagination-pills').innerHTML = pills;
+  }
+
+  function goToPage(p) {
+    currentPage = p;
+    renderPosGrid();
+  }
+
+  function prevPage() {
+    if (currentPage > 1) {
+      currentPage--;
+      renderPosGrid();
+    }
+  }
+
+  function nextPage() {
+    const totalPages = Math.ceil(getFilteredProducts().length / PAGE_SIZE);
+    if (currentPage < totalPages) {
+      currentPage++;
+      renderPosGrid();
+    }
+  }
+
+  function filterCategory(cat, btn) {
+    activeCategory = cat;
+    currentPage = 1;
+    document.querySelectorAll('.cat-pill').forEach(b => {
+      b.className = 'cat-pill px-3 py-1 rounded-full text-xs font-semibold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 shadow-xs whitespace-nowrap transition-colors';
+    });
+    btn.className = 'cat-pill px-3 py-1 rounded-full text-xs font-semibold bg-blue-600 text-white shadow-xs whitespace-nowrap transition-colors';
+    renderPosGrid();
+  }
+
+  function filterPosSearch(val) {
+    searchTerm = val;
+    currentPage = 1;
+    renderPosGrid();
+  }
+
+  function handlePosInputKey(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const list = getFilteredProducts();
+      if (list.length > 0) {
+        addToCart(list[0].id);
+        e.target.value = '';
+        searchTerm = '';
+        renderPosGrid();
+      } else {
+        showToast('Producto no encontrado', 'error');
+      }
+    }
+  }
+
+  function triggerScanSimulation() {
+    const rand = products[Math.floor(Math.random() * products.length)];
+    addToCart(rand.id);
+    showToast(`Escaneado: ${rand.name}`, 'qr_code_scanner');
+  }
+
+  // 6. GESTIÓN DEL TICKET / CARRITO
+  function renderCart() {
+    const list = document.getElementById('cart-items-container');
+    if (!list) return;
+
+    if (cart.length === 0) {
+      list.innerHTML = `<div class="p-6 text-center text-slate-400 text-xs">El ticket está vacío.<br>Selecciona o escanea productos para cobrar.</div>`;
+      updateTotals(0, 0, 0, 0, 0);
+      return;
+    }
+
+    let subtotal = 0;
+    let totalUds = 0;
+
+    list.innerHTML = cart.map((item, idx) => {
+      const itemDisc = item.discount || 0;
+      const itemTotal = item.price * item.qty * (1 - itemDisc / 100);
+      subtotal += itemTotal;
+      totalUds += item.qty;
+
+      return `
+        <div class="py-1.5 px-1 flex items-center justify-between hover:bg-slate-50 transition-colors">
+          <div class="flex-1 min-w-0 pr-1">
+            <span class="font-bold text-slate-800 block truncate text-xs">${item.name}</span>
+            <span class="text-[10px] text-slate-400">$${item.price.toFixed(2)} c/u ${itemDisc > 0 ? `<span class="text-emerald-600 font-bold">(-${itemDisc}%)</span>` : ''}</span>
+          </div>
+          <div class="flex items-center gap-0.5 w-16 justify-center">
+            <button onclick="changeQty(${idx}, -1)" class="w-4 h-4 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center transition-colors">-</button>
+            <span class="w-5 text-center font-bold text-slate-800 text-xs">${item.qty}</span>
+            <button onclick="changeQty(${idx}, 1)" class="w-4 h-4 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center transition-colors">+</button>
+          </div>
+          <span class="w-16 text-right font-mono font-bold text-slate-800 text-xs">$${itemTotal.toFixed(2)}</span>
+          <button onclick="removeCartItem(${idx})" class="w-5 text-slate-300 hover:text-rose-500 pl-1 transition-colors" title="Eliminar">
+            <span class="material-symbols-outlined text-sm">delete</span>
+          </button>
+        </div>
+      `;
+    }).join('');
+
+    const promoDisc = subtotal * (discountPct / 100);
+    const tax = (subtotal - promoDisc) * 0.18;
+    const grandTotal = Math.max(0, subtotal - promoDisc + tax);
+
+    updateTotals(subtotal, promoDisc, tax, grandTotal, totalUds);
+  }
+
+  function updateTotals(sub, disc, tax, total, uds) {
+    document.getElementById('subtotal-val').textContent = `$${sub.toFixed(2)}`;
+    document.getElementById('discount-val').textContent = `-$${disc.toFixed(2)}`;
+    document.getElementById('tax-val').textContent = `$${tax.toFixed(2)}`;
+    document.getElementById('total-val').textContent = `$${total.toFixed(2)}`;
+    document.getElementById('cart-count-uds').textContent = `${cart.length} Artículos (${uds} uds)`;
+    document.getElementById('discount-label').textContent = discountLabelText;
+    recalcVuelto();
+  }
+
+  function addToCart(prodId) {
+    const p = products.find(x => x.id === prodId);
+    if (!p) return;
+
+    const existing = cart.find(x => x.id === prodId);
+    if (existing) {
+      existing.qty += 1;
+    } else {
+      cart.push({ id: p.id, name: p.name, price: p.price, qty: 1, discount: 0 });
+    }
+    renderCart();
+    document.getElementById('metric-last-item').textContent = p.name;
+    showToast(`+ ${p.name}`);
+  }
+
+  function changeQty(idx, delta) {
+    if (!cart[idx]) return;
+    cart[idx].qty += delta;
+    if (cart[idx].qty <= 0) {
+      const removed = cart.splice(idx, 1);
+      showToast(`Removido: ${removed[0].name}`);
+    }
+    renderCart();
+  }
+
+  function removeCartItem(idx) {
+    if (!cart[idx]) return;
+    const removed = cart.splice(idx, 1);
+    showToast(`Removido: ${removed[0].name}`);
+    renderCart();
+  }
+
+  function openAnularModal() {
+    if (cart.length === 0) {
+      showToast('El ticket ya está vacío');
+      return;
+    }
+    openModal('modal-anular');
+  }
+
+  function confirmAnularCart() {
+    cart = [];
+    renderCart();
+    closeModal('modal-anular');
+    showToast('Ticket anulado correctamente', 'delete_sweep');
+  }
+
+  // 7. MÉTODOS DE PAGO Y VUELTO
+  function setPayMethod(m) {
+    payMethod = m;
+    ['cash', 'card', 'qr'].forEach(t => {
+      const btn = document.getElementById(`btn-pay-${t}`);
+      if (t === m) {
+        btn.className = 'tender-tab py-1.5 px-2 rounded-lg text-xs font-semibold bg-blue-600 text-white flex flex-col items-center shadow-xs transition-colors';
+      } else {
+        btn.className = 'tender-tab py-1.5 px-2 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 flex flex-col items-center transition-colors';
+      }
+    });
+
+    const cashBox = document.getElementById('box-cash-calc');
+    const elecBox = document.getElementById('box-elec-calc');
+    const elecTitle = document.getElementById('elec-title');
+    const elecDesc = document.getElementById('elec-desc');
+    const elecIcon = document.getElementById('elec-icon');
+
+    if (m === 'cash') {
+      cashBox.classList.remove('hidden');
+      elecBox.classList.add('hidden');
+    } else {
+      cashBox.classList.add('hidden');
+      elecBox.classList.remove('hidden');
+      if (m === 'card') {
+        elecIcon.textContent = 'credit_card';
+        elecTitle.textContent = 'Datáfono POS Listo (Tarjeta Débito/Crédito)';
+        elecDesc.textContent = 'Acerque o inserte la tarjeta en el terminal externo';
+      } else {
+        elecIcon.textContent = 'qr_code_2';
+        elecTitle.textContent = 'Código QR Dinámico Generado';
+        elecDesc.textContent = 'Escanee con la app del banco para pago inmediato';
+      }
+    }
+  }
+
+  function recalcVuelto() {
+    const total = parseFloat(document.getElementById('total-val').textContent.replace('$', '')) || 0;
+    const rec = parseFloat(document.getElementById('input-monto-recibido').value) || 0;
+    const vuelto = Math.max(0, rec - total);
+    document.getElementById('vuelto-val').textContent = `$${vuelto.toFixed(2)}`;
+  }
+
+  function setMontoPreset(val) {
+    document.getElementById('input-monto-recibido').value = val.toFixed(2);
+    recalcVuelto();
+    showToast(`Monto recibido: $${val.toFixed(2)}`);
+  }
+
+  function setMontoExacto() {
+    const total = document.getElementById('total-val').textContent.replace('$', '');
+    document.getElementById('input-monto-recibido').value = total;
+    recalcVuelto();
+    showToast('Cobro de monto exacto');
+  }
+
+  // 8. COBRO Y CIERRE DE TICKET (F12)
+  function executeCheckout() {
+    if (cart.length === 0) {
+      showToast('No hay productos en el ticket', 'warning');
+      return;
+    }
+
+    const totalStr = document.getElementById('total-val').textContent;
+    const recStr = payMethod === 'cash' ? `$${parseFloat(document.getElementById('input-monto-recibido').value || 0).toFixed(2)}` : totalStr;
+    const vueltStr = payMethod === 'cash' ? document.getElementById('vuelto-val').textContent : '$0.00';
+    const dateStr = new Date().toLocaleDateString('es-ES') + ' ' + new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+    document.getElementById('ticket-preview-box').innerHTML = `
+      <div class="text-center font-bold text-slate-800 text-xs">NexPOS RETAIL S.A.</div>
+      <div class="text-center text-[10px] text-slate-400">RUC: 20489182391 • Caja 01 - Turno Mañana</div>
+      <div class="text-center text-[10px] text-slate-400">${dateStr}</div>
+      <div class="border-b border-dashed border-slate-300 my-1.5"></div>
+      <div>Comprobante: #FAC-00${ticketCounter}</div>
+      <div>Cliente: ${currentClient.name}</div>
+      <div>Doc: ${currentClient.doc}</div>
+      <div>Forma de Pago: ${payMethod.toUpperCase()}</div>
+      <div class="border-b border-dashed border-slate-300 my-1.5"></div>
+      <div class="space-y-1">
+        ${cart.map(i => {
+          const d = i.discount || 0;
+          const tot = i.qty * i.price * (1 - d / 100);
+          return `<div class="flex justify-between"><span>${i.qty}x ${i.name}</span><span>$${tot.toFixed(2)}</span></div>`;
+        }).join('')}
+      </div>
+      <div class="border-b border-dashed border-slate-300 my-1.5"></div>
+      <div class="flex justify-between font-bold text-slate-800 text-xs"><span>TOTAL COBRADO:</span><span>${totalStr}</span></div>
+      <div class="flex justify-between text-slate-500"><span>Monto Recibido:</span><span>${recStr}</span></div>
+      <div class="flex justify-between text-slate-500"><span>Cambio / Vuelto:</span><span class="text-emerald-600 font-bold">${vueltStr}</span></div>
+      <div class="border-b border-dashed border-slate-300 my-1.5"></div>
+      <div class="text-center text-[10px] text-slate-400 italic">¡Gracias por su compra! Comprobante fiscal electrónico.</div>
+    `;
+
+    // Registrar en historial de comprobantes
+    invoices.unshift({
+      id: `FAC-00${ticketCounter}`,
+      time: 'Justo ahora',
+      customer: currentClient.name,
+      method: payMethod === 'cash' ? 'Efectivo' : (payMethod === 'card' ? 'Tarjeta POS' : 'QR / Transf.'),
+      total: parseFloat(totalStr.replace('$', '')),
+      status: 'emitida'
+    });
+    renderInvoicesTable();
+
+    ticketCounter++;
+    document.getElementById('label-tickets-turno').textContent = `Ventas del turno: ${ticketCounter - 808} tickets`;
+    document.getElementById('turno-ticket-count').textContent = ticketCounter - 808;
+
+    openModal('modal-checkout-success');
+  }
+
+  function resetNewSale() {
+    closeModal('modal-checkout-success');
+    cart = [];
+    currentClient = { name: 'Consumidor Final', doc: 'DNI/RUC: Sin registrar' };
+    document.getElementById('client-name-display').textContent = currentClient.name;
+    document.getElementById('client-doc-display').textContent = currentClient.doc;
+    renderCart();
+    showToast('Terminal lista para nueva venta', 'point_of_sale');
+  }
+
+  function printReceipt() {
+    showToast('Imprimiendo en térmica EPSON TM-T20...', 'print');
+    setTimeout(() => window.print(), 300);
+  }
+
+  // 9. CLIENTES, MODALES Y DROPDOWNS
+  function openClientModal() { openModal('modal-client'); }
+  function openPromoModal() { openModal('modal-promo'); }
+  function openManualItemModal() { openModal('modal-manual-item'); }
+  function openShortcutsModal() { openModal('modal-shortcuts'); }
+  function openTurnoModal() { openModal('modal-turno'); }
+  function openNewUserModal() { openModal('modal-new-user'); }
+
+  function openModal(id) {
+    const m = document.getElementById(id);
+    if (m) m.classList.remove('hidden');
+  }
+
+  function closeModal(id) {
+    const m = document.getElementById(id);
+    if (m) m.classList.add('hidden');
+  }
+
+  function selectClient(name, doc) {
+    currentClient = { name, doc };
+    document.getElementById('client-name-display').textContent = name;
+    document.getElementById('client-doc-display').textContent = doc;
+    closeModal('modal-client');
+    showToast(`Cliente asignado: ${name}`);
+  }
+
+  function handleQuickClient(e) {
+    e.preventDefault();
+    const name = document.getElementById('input-new-client-name').value;
+    const doc = document.getElementById('input-new-client-doc').value;
+    selectClient(name, doc);
+  }
+
+  function applyDiscount(pct, label) {
+    discountPct = pct;
+    discountLabelText = label;
+    renderCart();
+    closeModal('modal-promo');
+    showToast(`Descuento aplicado: ${pct}%`);
+  }
+
+  function applyCustomPromo() {
+    const val = parseFloat(document.getElementById('input-custom-promo').value) || 0;
+    applyDiscount(val, `Descuento Especial (-${val}%):`);
+  }
+
+  function handleManualSubmit(e) {
+    e.preventDefault();
+    const name = document.getElementById('manual-prod-name').value;
+    const price = parseFloat(document.getElementById('manual-prod-price').value) || 1;
+    const qty = parseInt(document.getElementById('manual-prod-qty').value) || 1;
+
+    cart.push({ id: 'manual_' + Date.now(), name, price, qty, discount: 0 });
+    renderCart();
+    closeModal('modal-manual-item');
+    showToast(`+ ${name} agregado al ticket`);
+  }
+
+  // 10. NOTIFICACIONES Y PERFIL
+  function toggleNotifications(e) {
+    if (e) e.stopPropagation();
+    const p = document.getElementById('popover-notifs');
+    p.classList.toggle('hidden');
+    document.getElementById('popover-user-menu').classList.add('hidden');
+  }
+
+  function toggleUserDropdown(e) {
+    if (e) e.stopPropagation();
+    const u = document.getElementById('popover-user-menu');
+    u.classList.toggle('hidden');
+    document.getElementById('popover-notifs').classList.add('hidden');
+  }
+
+  function clearAllNotifications() {
+    document.getElementById('notif-items-list').innerHTML = `<div class="p-3 text-center text-slate-400 text-xs">No hay notificaciones pendientes.</div>`;
+    document.getElementById('badge-notif').classList.add('hidden');
+    showToast('Notificaciones marcadas como leídas');
+  }
+
+  function dismissNotif(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+    showToast('Notificación descartada');
+  }
+
+  // 11. BÚSQUEDA GLOBAL
+  function handleGlobalSearch(val) {
+    const btn = document.getElementById('btn-clear-search');
+    if (val.trim()) {
+      btn.classList.remove('hidden');
+      filterPosSearch(val);
+    } else {
+      btn.classList.add('hidden');
+      filterPosSearch('');
+    }
+  }
+
+  function clearGlobalSearch() {
+    const inp = document.getElementById('global-search-input');
+    inp.value = '';
+    handleGlobalSearch('');
+  }
+
+  // 12. TABLAS Y COMPONENTES
+  function renderInvoicesTable() {
+    const tbody = document.getElementById('invoices-tbody');
+    if (!tbody) return;
+    document.getElementById('caja-invoices-count').textContent = invoices.length;
+    tbody.innerHTML = invoices.map((inv, idx) => `
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-2.5 font-bold font-mono text-blue-600">${inv.id}</td>
+        <td class="p-2.5 text-slate-500">${inv.time}</td>
+        <td class="p-2.5 font-semibold text-slate-800">${inv.customer}</td>
+        <td class="p-2.5"><span class="px-2 py-0.5 rounded bg-slate-100 font-medium text-slate-700 text-[11px]">${inv.method}</span></td>
+        <td class="p-2.5 text-right font-mono font-bold text-slate-800">$${inv.total.toFixed(2)}</td>
+        <td class="p-2.5 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold ${inv.status === 'emitida' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">
+            ${inv.status === 'emitida' ? 'Emitida / Pagada' : 'Anulada'}
+          </span>
+        </td>
+        <td class="p-2.5 text-right">
+          ${inv.status === 'emitida' ? `
+            <button onclick="anularFactura(${idx})" class="px-2 py-0.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded font-semibold text-[11px] transition-colors">
+              Anular
+            </button>
+          ` : '<span class="text-slate-400 text-[11px]">Revertido</span>'}
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function anularFactura(idx) {
+    if (!invoices[idx]) return;
+    invoices[idx].status = 'anulada';
+    renderInvoicesTable();
+    showToast(`Comprobante ${invoices[idx].id} anulado y stock revertido`, 'undo');
+  }
+
+  function renderInventoryTable() {
+    const tbody = document.getElementById('inventory-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = products.map(p => `
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <img src="${p.img}" class="w-7 h-7 rounded object-cover">
+            <div>
+              <span class="font-bold text-slate-800 block">${p.name}</span>
+              <span class="font-mono text-[10px] text-slate-400">${p.sku}</span>
+            </div>
+          </div>
+        </td>
+        <td class="p-3 capitalize text-slate-600">${p.cat}</td>
+        <td class="p-3 text-right font-mono font-bold text-slate-800">$${p.price.toFixed(2)}</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold ${p.low ? 'bg-amber-100 text-amber-700' : 'bg-emerald-50 text-emerald-700'}">
+            ${p.stock} unidades
+          </span>
+        </td>
+        <td class="p-3 text-right">
+          <button onclick="addToCart('${p.id}'); navigateTo('pos');" class="px-2 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 rounded text-xs font-semibold transition-colors">
+            Vender en POS
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function renderTeamCards() {
+    const container = document.getElementById('team-cards-grid');
+    if (!container) return;
+    container.innerHTML = teamMembers.map(m => `
+      <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs space-y-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full ${m.bg} text-white font-bold flex items-center justify-center text-xs">${m.init}</div>
+            <div>
+              <h4 class="font-bold text-slate-900">${m.name}</h4>
+              <span class="text-[10px] text-blue-600 font-semibold">${m.role}</span>
+            </div>
+          </div>
+          <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-bold">${m.status}</span>
+        </div>
+        <div class="text-[11px] text-slate-500 pt-1 border-t border-slate-100">${m.perms}</div>
+      </div>
+    `).join('');
+  }
+
+  function handleNewUser(e) {
+    e.preventDefault();
+    const name = document.getElementById('user-name').value;
+    const role = document.getElementById('user-role-select').value;
+    const init = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+
+    teamMembers.push({ name, role, perms: 'Permisos estándar asignados', status: 'Activo', bg: 'bg-indigo-600', init });
+    renderTeamCards();
+    closeModal('modal-new-user');
+    showToast(`Colaborador ${name} registrado`);
+  }
+
+  function renderClientsGrid() {
+    const list = document.getElementById('clients-card-list');
+    if (!list) return;
+    list.innerHTML = clientsList.map(c => `
+      <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs space-y-2">
+        <div class="font-bold text-slate-900">${c.name}</div>
+        <p class="text-slate-400 text-[11px]">${c.doc} • ${c.desc}</p>
+        <button class="text-blue-600 font-bold hover:underline" onclick="selectClient('${c.name}', '${c.doc}'); navigateTo('pos');">
+          Usar en POS
+        </button>
+      </div>
+    `).join('');
+  }
+
+  // 13. ATAJOS GLOBALES DE TECLADO (F1-F12 Y ESC)
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'F12') {
+      e.preventDefault();
+      executeCheckout();
+    } else if (e.key === 'F2') {
+      e.preventDefault();
+      document.getElementById('global-search-input').focus();
+      showToast('Búsqueda rápida enfocada', 'search');
+    } else if (e.key === 'F4') {
+      e.preventDefault();
+      openPromoModal();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      // Cerrar modales si hay abiertos, o anular ticket
+      const anyModalOpen = document.querySelector('[id^="modal-"]:not(.hidden)');
+      if (anyModalOpen) {
+        anyModalOpen.classList.add('hidden');
+      } else {
+        openAnularModal();
+      }
+    }
+  });
+
+  // Cerrar popovers al hacer click fuera
+  window.addEventListener('click', (e) => {
+    if (!e.target.closest('#btn-notifications') && !e.target.closest('#popover-notifs')) {
+      const p = document.getElementById('popover-notifs');
+      if (p) p.classList.add('hidden');
+    }
+    if (!e.target.closest('#popover-user-menu') && !e.target.closest('[onclick*="toggleUserDropdown"]')) {
+      const u = document.getElementById('popover-user-menu');
+      if (u) u.classList.add('hidden');
+    }
+  });
+
+  // INICIALIZAR VISTAS
+  document.addEventListener('DOMContentLoaded', () => {
+    renderPosGrid();
+    renderCart();
+    renderInvoicesTable();
+    renderInventoryTable();
+    renderTeamCards();
+    renderClientsGrid();
+  });
+</script>
+
+
+
+
+
+
+
+
+
+<script>
+  function openNewProductModal() {
+    generateSKU();
+    simulateBarcodeScan();
+    calcProfitMargin();
+    openModal('modal-new-product');
+  }
+
+  function generateSKU() {
+    const randomNum = Math.floor(100000 + Math.random() * 900000);
+    const input = document.getElementById('new-prod-sku');
+    if (input) input.value = `SKU-${randomNum}`;
+  }
+
+  function simulateBarcodeScan() {
+    const randomEan = '775' + Math.floor(1000000 + Math.random() * 9000000);
+    const input = document.getElementById('new-prod-ean');
+    if (input) {
+      input.value = randomEan;
+      if (typeof showToast === 'function') showToast(`Código EAN generado: ${randomEan}`, 'barcode_scanner');
+    }
+  }
+
+  function handleProductImageUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const preview = document.getElementById('new-prod-img-preview');
+        const urlInput = document.getElementById('new-prod-img-url');
+        if (preview) preview.src = e.target.result;
+        if (urlInput) urlInput.value = e.target.result;
+        if (typeof showToast === 'function') showToast('Imagen cargada correctamente', 'image');
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function calcProfitMargin() {
+    const cost = parseFloat(document.getElementById('new-prod-cost')?.value) || 0;
+    const price = parseFloat(document.getElementById('new-prod-price')?.value) || 0;
+    const display = document.getElementById('new-prod-margin-display');
+    if (!display) return;
+
+    if (price <= 0) {
+      display.textContent = '0% ($0.00)';
+      display.className = 'font-mono font-bold text-slate-400';
+      return;
+    }
+    const profit = price - cost;
+    const margin = ((profit / price) * 100).toFixed(1);
+    if (profit >= 0) {
+      display.textContent = `+${margin}% ($${profit.toFixed(2)})`;
+      display.className = 'font-mono font-bold text-emerald-600';
+    } else {
+      display.textContent = `${margin}% ($${profit.toFixed(2)})`;
+      display.className = 'font-mono font-bold text-rose-600';
+    }
+  }
+
+  function handleNewProductSubmit(e) {
+    e.preventDefault();
+    const name = document.getElementById('new-prod-name').value.trim();
+    const price = parseFloat(document.getElementById('new-prod-price').value) || 0;
+    const cost = parseFloat(document.getElementById('new-prod-cost').value) || 0;
+    const stock = parseInt(document.getElementById('new-prod-stock').value) || 0;
+    const minStock = parseInt(document.getElementById('new-prod-min-stock').value) || 5;
+    const cat = document.getElementById('new-prod-cat').value;
+    const sku = document.getElementById('new-prod-sku').value.trim();
+    const ean = document.getElementById('new-prod-ean').value.trim();
+    const img = document.getElementById('new-prod-img-url').value;
+
+    const newProd = {
+      id: 'p' + (products.length + 1),
+      name,
+      price,
+      cost,
+      stock,
+      minStock,
+      cat,
+      sku,
+      ean,
+      low: stock <= minStock,
+      img
+    };
+
+    products.unshift(newProd);
+
+    if (typeof renderInventoryTable === 'function') renderInventoryTable();
+    if (typeof renderPosGrid === 'function') renderPosGrid();
+
+    const badgeAll = document.getElementById('badge-count-all');
+    if (badgeAll) badgeAll.textContent = products.length;
+
+    closeModal('modal-new-product');
+    document.getElementById('form-new-product').reset();
+    if (typeof showToast === 'function') {
+      showToast(`¡Producto "${name}" registrado con éxito!`, 'check_circle');
+    }
+  }
+</script></body></html>
