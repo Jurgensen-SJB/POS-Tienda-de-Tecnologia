@@ -74,7 +74,7 @@ export const EditProductModal = () => {
             <div>
               <h3 className="font-bold text-slate-900 text-sm">Editar Producto (Administrador)</h3>
               <p className="text-[11px] text-slate-500">
-                Modifica precios, nombre, categoría y existencias de <strong className="text-slate-800 font-mono">{sku}</strong>
+                Modifica precios, nombre, categoría y existencias de <strong className="text-slate-800">{name}</strong>
               </p>
             </div>
           </div>
@@ -99,14 +99,6 @@ export const EditProductModal = () => {
                 </label>
               </div>
             </div>
-          </div>
-
-          {/* SKU Code (Readonly) */}
-          <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 flex items-center justify-between">
-            <span className="font-semibold text-slate-600 text-[11px]">Código de Producto (SKU):</span>
-            <span className="font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">
-              {sku}
-            </span>
           </div>
 
           {/* Commercial Name */}

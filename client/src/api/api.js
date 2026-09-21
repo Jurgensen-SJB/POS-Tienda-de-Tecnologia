@@ -25,23 +25,46 @@ export const api = {
   login: (identifier, password) => fetchJson('/auth/login', { method: 'POST', body: JSON.stringify({ identifier, password }) }),
 
   // Productos
-  getProducts: () => fetchJson('/productos'),
+  getProducts: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return fetchJson(`/productos${query ? '?' + query : ''}`);
+  },
   getProduct: (id) => fetchJson(`/productos/${id}`),
   createProduct: (data) => fetchJson('/productos', { method: 'POST', body: JSON.stringify(data) }),
   updateProduct: (id, data) => fetchJson(`/productos/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  toggleProductStatus: (id, estado) => fetchJson(`/productos/${id}/estado`, { method: 'PATCH', body: JSON.stringify({ estado }) }),
   deleteProduct: (id) => fetchJson(`/productos/${id}`, { method: 'DELETE' }),
 
   // Categorías
-  getCategories: () => fetchJson('/categorias'),
+  getCategories: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return fetchJson(`/categorias${query ? '?' + query : ''}`);
+  },
+  getCategory: (id) => fetchJson(`/categorias/${id}`),
   createCategory: (data) => fetchJson('/categorias', { method: 'POST', body: JSON.stringify(data) }),
+  updateCategory: (id, data) => fetchJson(`/categorias/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  toggleCategoryStatus: (id, estado) => fetchJson(`/categorias/${id}/estado`, { method: 'PATCH', body: JSON.stringify({ estado }) }),
 
   // Clientes
-  getClients: () => fetchJson('/clientes'),
+  getClients: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return fetchJson(`/clientes${query ? '?' + query : ''}`);
+  },
+  getClient: (id) => fetchJson(`/clientes/${id}`),
   createClient: (data) => fetchJson('/clientes', { method: 'POST', body: JSON.stringify(data) }),
+  updateClient: (id, data) => fetchJson(`/clientes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  toggleClientStatus: (id, estado) => fetchJson(`/clientes/${id}/estado`, { method: 'PATCH', body: JSON.stringify({ estado }) }),
 
   // Empleados / Usuarios
-  getEmployees: () => fetchJson('/empleados'),
+  getEmployees: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return fetchJson(`/empleados${query ? '?' + query : ''}`);
+  },
+  getEmployee: (id) => fetchJson(`/empleados/${id}`),
   createEmployee: (data) => fetchJson('/empleados', { method: 'POST', body: JSON.stringify(data) }),
+  updateEmployee: (id, data) => fetchJson(`/empleados/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  toggleEmployeeStatus: (id, estado) => fetchJson(`/empleados/${id}/estado`, { method: 'PATCH', body: JSON.stringify({ estado }) }),
+  deactivateEmployee: (id) => fetchJson(`/empleados/${id}`, { method: 'DELETE' }),
 
   // Ventas & Checkout
   getSales: () => fetchJson('/ventas'),
@@ -54,10 +77,26 @@ export const api = {
   cierreCaja: (data) => fetchJson('/cajas/cierre', { method: 'POST', body: JSON.stringify(data) }),
 
   // Proveedores
-  getProviders: () => fetchJson('/proveedores'),
+  getProviders: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return fetchJson(`/proveedores${query ? '?' + query : ''}`);
+  },
+  getProvider: (id) => fetchJson(`/proveedores/${id}`),
   createProvider: (data) => fetchJson('/proveedores', { method: 'POST', body: JSON.stringify(data) }),
+  updateProvider: (id, data) => fetchJson(`/proveedores/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  toggleProviderStatus: (id, estado) => fetchJson(`/proveedores/${id}/estado`, { method: 'PATCH', body: JSON.stringify({ estado }) }),
 
   // Compras
   getPurchases: () => fetchJson('/compras'),
   createPurchase: (data) => fetchJson('/compras', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Permisos
+  getAllPermisos: () => fetchJson('/permisos'),
+  getPermisosByUsuario: (id_usuario) => fetchJson(`/permisos/usuario/${id_usuario}`),
+  getPermisosByRol: (id_rol) => fetchJson(`/permisos/rol/${id_rol}`),
+  updatePermisosByRol: (id_rol, permisos) => fetchJson(`/permisos/rol/${id_rol}`, { method: 'PUT', body: JSON.stringify({ permisos }) }),
+
+  // Auditoría y Registro de Operaciones
+  getAuditoria: () => fetchJson('/auditoria'),
+  createAuditoria: (data) => fetchJson('/auditoria', { method: 'POST', body: JSON.stringify(data) }),
 };

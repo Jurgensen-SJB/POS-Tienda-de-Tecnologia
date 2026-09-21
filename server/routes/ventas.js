@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db/pool');
 const { salesHistory, products, clients, cajaActual } = require('../db/fallbackData');
+const { registrarOperacion } = require('./auditoria');
 
 // GET /api/ventas - Sales history
 router.get('/', async (req, res) => {
@@ -156,6 +157,14 @@ router.post('/', async (req, res) => {
 
   salesHistory.unshift(newSale);
 
+  await registrarOperacion({
+    operacion: 'CREAR',
+    tabla_afectada: 'ventas',
+    id_registro_afectado: newSale.id_venta,
+    descripcion: `Venta ${newSale.numero_factura} completada por $${numTotal.toFixed(2)} (${newSale.metodo})`,
+    datos_nuevos: { total: numTotal, cliente: clientName, items_count: items.length }
+  });
+
   res.status(201).json(newSale);
 });
 
@@ -165,11 +174,25 @@ router.post('/:id/anular', async (req, res) => {
   try {
     await pool.query("UPDATE ventas SET estado = 'ANULADA', fecha_anulacion = CURRENT_TIMESTAMP WHERE id_venta = $1", [id]);
     await pool.query("UPDATE facturas SET estado = 'ANULADA' WHERE id_venta = $1", [id]);
+    await registrarOperacion({
+      operacion: 'ANULAR',
+      tabla_afectada: 'ventas',
+      id_registro_afectado: parseInt(id) || 0,
+      descripcion: `Anulación de venta #${id} con reversión de inventario`,
+      datos_nuevos: { estado: 'ANULADA' }
+    });
     res.json({ message: 'Venta anulada exitosamente' });
   } catch (err) {
     const sale = salesHistory.find(s => s.id_venta === parseInt(id) || s.numero_factura === id);
     if (sale) {
       sale.estado = 'ANULADA';
+      await registrarOperacion({
+        operacion: 'ANULAR',
+        tabla_afectada: 'ventas',
+        id_registro_afectado: sale.id_venta,
+        descripcion: `Anulación de venta ${sale.numero_factura} ($${sale.total})`,
+        datos_nuevos: { estado: 'ANULADA' }
+      });
       return res.json({ message: 'Venta anulada exitosamente' });
     }
     res.status(404).json({ error: 'Venta no encontrada' });

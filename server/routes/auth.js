@@ -2,6 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db/pool');
 
+// Permisos por rol (fallback)
+const ROL_PERMISOS_FALLBACK = {
+  admin:      ['ver_pos','cobrar','aplicar_descuento','anular_venta','ver_caja','abrir_caja','cerrar_caja','corte_parcial','ver_inventario','crear_producto','editar_producto','ver_clientes','crear_cliente','ver_empleados','crear_empleado','ver_auditoria','ver_compras','crear_compra'],
+  supervisor: ['ver_pos','cobrar','aplicar_descuento','anular_venta','ver_caja','abrir_caja','cerrar_caja','corte_parcial','ver_inventario','ver_clientes','crear_cliente','ver_empleados'],
+  cajero:     ['ver_pos','cobrar','ver_caja','ver_clientes'],
+};
+
 // Predefined accounts with passwords
 const systemAccounts = [
   {
@@ -79,7 +86,22 @@ router.post('/login', async (req, res) => {
         : user.password_hash === password || password === 'admin123' || password === 'cajero123';
 
       if (valid) {
-        const rol = user.rol_nombre.toLowerCase().includes('admin') ? 'Administrador General' : 'Cajero';
+        const isAdmin = user.rol_nombre.toLowerCase().includes('admin');
+        const isSupervisor = user.rol_nombre.toLowerCase().includes('supervis');
+        const rol = isAdmin ? 'Administrador General' : (isSupervisor ? 'Supervisor' : 'Cajero');
+        const rolKey = isAdmin ? 'admin' : (isSupervisor ? 'supervisor' : 'cajero');
+
+        // Try to fetch permissions from DB
+        let permisos = ROL_PERMISOS_FALLBACK[rolKey];
+        try {
+          const pResult = await pool.query(`
+            SELECT p.nombre FROM rol_permiso rp
+            JOIN permisos p ON rp.id_permiso = p.id_permiso
+            WHERE rp.id_rol = u.id_rol
+          `);
+          if (pResult.rows.length > 0) permisos = pResult.rows.map(r => r.nombre);
+        } catch { /* use fallback */ }
+
         return res.json({
           id_usuario: user.id_usuario,
           id_empleado: user.id_empleado,
@@ -88,6 +110,7 @@ router.post('/login', async (req, res) => {
           nombre_usuario: user.nombre_usuario,
           rol,
           cargo: user.cargo,
+          permisos,
           avatar: matchingAccount?.avatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=120&auto=format&fit=crop&q=80'
         });
       }
@@ -103,7 +126,11 @@ router.post('/login', async (req, res) => {
 
   if (account) {
     const { password: _, ...userSafe } = account;
-    return res.json(userSafe);
+    // Attach permissions based on role
+    const rolKey = userSafe.rol?.toLowerCase().includes('admin') ? 'admin'
+      : userSafe.rol?.toLowerCase().includes('supervis') ? 'supervisor'
+      : 'cajero';
+    return res.json({ ...userSafe, permisos: ROL_PERMISOS_FALLBACK[rolKey] });
   }
 
   return res.status(401).json({ error: 'Credenciales inválidas. Verifica tu correo/usuario y contraseña.' });

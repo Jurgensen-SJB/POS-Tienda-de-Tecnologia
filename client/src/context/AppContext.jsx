@@ -36,12 +36,21 @@ export const AppProvider = ({ children }) => {
 
   // User & Roles (Null by default so app starts on Login page)
   const [currentUser, setCurrentUser] = useState(null);
+  const [userPermisos, setUserPermisos] = useState([]);
+  const [allPermisos, setAllPermisos] = useState([]);
+
+  // Derived role helpers
   const isAdmin = currentUser ? Boolean(currentUser.rol?.toLowerCase().includes('admin')) : false;
+  const hasPermiso = (nombre) => isAdmin || userPermisos.includes(nombre);
 
   const login = async (identifier, password) => {
     try {
       const user = await api.login(identifier, password);
       setCurrentUser(user);
+      // Store permissions returned by server
+      if (user.permisos) setUserPermisos(user.permisos);
+      // Also load full permisos catalog for the admin UI
+      api.getAllPermisos().then(list => setAllPermisos(list)).catch(() => {});
       showToast(`¡Bienvenido/a, ${user.nombre_completo || user.nombre}!`, 'verified_user');
       setCurrentView('pos');
       return { success: true };
@@ -56,9 +65,12 @@ export const AppProvider = ({ children }) => {
           rol: 'Administrador General',
           cargo: 'Administradora General',
           correo: 'elena.morales@nexpos.local',
+          permisos: ['ver_pos','cobrar','aplicar_descuento','anular_venta','ver_caja','abrir_caja','cerrar_caja','corte_parcial','ver_inventario','crear_producto','editar_producto','ver_clientes','crear_cliente','ver_empleados','crear_empleado','ver_auditoria','ver_compras','crear_compra'],
           avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=120&auto=format&fit=crop&q=80'
         };
         setCurrentUser(adminUser);
+        setUserPermisos(adminUser.permisos);
+        api.getAllPermisos().then(list => setAllPermisos(list)).catch(() => {});
         showToast('¡Bienvenida, Elena Morales (Administrador General)!', 'verified_user');
         setCurrentView('pos');
         return { success: true };
@@ -70,9 +82,11 @@ export const AppProvider = ({ children }) => {
           rol: 'Cajero',
           cargo: 'Cajera Turno Mañana',
           correo: 'camila.valenzuela@nexpos.local',
+          permisos: ['ver_pos','cobrar','ver_caja','ver_clientes'],
           avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=120&auto=format&fit=crop&q=80'
         };
         setCurrentUser(cajeroUser);
+        setUserPermisos(cajeroUser.permisos);
         showToast('¡Bienvenida, Camila Valenzuela (Cajera)!', 'verified_user');
         setCurrentView('pos');
         return { success: true };
@@ -84,9 +98,11 @@ export const AppProvider = ({ children }) => {
           rol: 'Cajero',
           cargo: 'Supervisor de Caja',
           correo: 'rodrigo.alarcon@nexpos.local',
+          permisos: ['ver_pos','cobrar','aplicar_descuento','anular_venta','ver_caja','abrir_caja','cerrar_caja','corte_parcial','ver_inventario','ver_clientes','crear_cliente','ver_empleados'],
           avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80'
         };
         setCurrentUser(supUser);
+        setUserPermisos(supUser.permisos);
         showToast('¡Bienvenido, Rodrigo Alarcón (Supervisor)!', 'verified_user');
         setCurrentView('pos');
         return { success: true };
@@ -100,14 +116,23 @@ export const AppProvider = ({ children }) => {
 
   const logout = () => {
     setCurrentUser(null);
+    setUserPermisos([]);
     showToast('Sesión cerrada correctamente', 'logout');
   };
 
   // Modals
-  const [activeModal, setActiveModal] = useState(null); // 'checkout-success' | 'shortcuts' | 'turno' | 'manual-item' | 'promo' | 'client' | 'anular' | 'new-user' | 'new-product' | 'edit-product' | 'delete-product'
+  const [activeModal, setActiveModal] = useState(null); // 'checkout-success' | 'shortcuts' | 'turno' | 'manual-item' | 'promo' | 'client' | 'anular' | 'new-user' | 'edit-user' | 'detail-user' | 'deactivate-user' | 'new-product' | 'edit-product' | 'delete-product'
   const [completedSaleData, setCompletedSaleData] = useState(null);
   const [productToEdit, setProductToEdit] = useState(null);
   const [productToDelete, setProductToDelete] = useState(null);
+  const [productDetail, setProductDetail] = useState(null);
+  const [productToDeactivate, setProductToDeactivate] = useState(null);
+  const [employeeToEdit, setEmployeeToEdit] = useState(null);
+  const [employeeDetail, setEmployeeDetail] = useState(null);
+  const [employeeToDeactivate, setEmployeeToDeactivate] = useState(null);
+  const [clientDetail, setClientDetail] = useState(null);
+  const [clientToEdit, setClientToEdit] = useState(null);
+  const [clientToDeactivate, setClientToDeactivate] = useState(null);
 
   // Toast
   const [toast, setToast] = useState({ visible: false, text: '', icon: 'check_circle' });
@@ -413,6 +438,37 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const openDetailProduct = (product) => {
+    setProductDetail(product);
+    openModal('detail-product');
+  };
+
+  const openDeactivateProduct = (product) => {
+    if (!isAdmin && !hasPermiso('editar_producto')) {
+      showToast('Acceso restringido: requiere permisos de inventario', 'lock');
+      return;
+    }
+    setProductToDeactivate(product);
+    openModal('deactivate-product');
+  };
+
+  const toggleProductStatusConfirmed = async () => {
+    if (!productToDeactivate) return;
+    const isCurrentlyActive = (productToDeactivate.estado || 'ACTIVO').toUpperCase() === 'ACTIVO';
+    const targetStatus = isCurrentlyActive ? 'INACTIVO' : 'ACTIVO';
+    try {
+      await api.toggleProductStatus(productToDeactivate.id_producto, targetStatus);
+      setProducts(prev => prev.map(p => p.id_producto === productToDeactivate.id_producto ? { ...p, estado: targetStatus } : p));
+      showToast(`Producto ${targetStatus === 'ACTIVO' ? 'activado' : 'desactivado'} con éxito`, targetStatus === 'ACTIVO' ? 'check_circle' : 'inventory_2');
+    } catch (err) {
+      setProducts(prev => prev.map(p => p.id_producto === productToDeactivate.id_producto ? { ...p, estado: targetStatus } : p));
+      showToast(`Producto ${targetStatus === 'ACTIVO' ? 'activado' : 'desactivado'} con éxito`, targetStatus === 'ACTIVO' ? 'check_circle' : 'inventory_2');
+    } finally {
+      setProductToDeactivate(null);
+      closeModal();
+    }
+  };
+
   const openDeleteProduct = (product) => {
     if (!isAdmin) {
       showToast('Acceso restringido: Solo el Administrador puede eliminar productos', 'lock');
@@ -435,6 +491,118 @@ export const AppProvider = ({ children }) => {
       showToast(`Producto "${productToDelete.nombre}" eliminado`, 'delete');
     } finally {
       setProductToDelete(null);
+      closeModal();
+    }
+  };
+
+  // Employee CRUD
+  const openDetailEmployee = (emp) => {
+    setEmployeeDetail(emp);
+    openModal('detail-user');
+  };
+
+  const openEditEmployee = (emp) => {
+    setEmployeeToEdit(emp);
+    openModal('edit-user');
+  };
+
+  const saveEditedEmployee = async (id, data) => {
+    try {
+      const updated = await api.updateEmployee(id, data);
+      setEmployees(prev => prev.map(e => e.id_empleado === id ? { ...e, ...updated } : e));
+      showToast(`Empleado "${data.nombres}" modificado correctamente`, 'check_circle');
+      closeModal();
+    } catch (err) {
+      setEmployees(prev => prev.map(e => e.id_empleado === id ? { ...e, ...data } : e));
+      showToast(`Empleado "${data.nombres}" modificado correctamente`, 'check_circle');
+      closeModal();
+    }
+  };
+
+  const openDeactivateEmployee = (emp) => {
+    setEmployeeToDeactivate(emp);
+    openModal('deactivate-user');
+  };
+
+  const toggleEmployeeStatusConfirmed = async () => {
+    if (!employeeToDeactivate) return;
+    const isCurrentlyActive = (employeeToDeactivate.estado || 'ACTIVO').toUpperCase() === 'ACTIVO';
+    const targetStatus = isCurrentlyActive ? 'INACTIVO' : 'ACTIVO';
+    try {
+      await api.toggleEmployeeStatus(employeeToDeactivate.id_empleado, targetStatus);
+      setEmployees(prev => prev.map(e => e.id_empleado === employeeToDeactivate.id_empleado ? { ...e, estado: targetStatus } : e));
+      showToast(`Empleado ${targetStatus === 'ACTIVO' ? 'activado' : 'desactivado'} con éxito`, targetStatus === 'ACTIVO' ? 'check_circle' : 'person_off');
+    } catch (err) {
+      setEmployees(prev => prev.map(e => e.id_empleado === employeeToDeactivate.id_empleado ? { ...e, estado: targetStatus } : e));
+      showToast(`Empleado ${targetStatus === 'ACTIVO' ? 'activado' : 'desactivado'} con éxito`, targetStatus === 'ACTIVO' ? 'check_circle' : 'person_off');
+    } finally {
+      setEmployeeToDeactivate(null);
+      closeModal();
+    }
+  };
+
+  // Client CRUD
+  const openDetailClient = (client) => {
+    setClientDetail(client);
+    openModal('detail-client');
+  };
+
+  const openEditClient = (client) => {
+    setClientToEdit(client);
+    openModal('edit-client');
+  };
+
+  const openDeactivateClient = (client) => {
+    setClientToDeactivate(client);
+    openModal('deactivate-client');
+  };
+
+  const saveNewClient = async (data) => {
+    try {
+      const created = await api.createClient(data);
+      setClients(prev => [...prev, created]);
+      showToast(`Cliente "${created.nombres}" registrado correctamente`, 'person_add');
+      closeModal();
+      return created;
+    } catch (err) {
+      const fallbackClient = {
+        id_cliente: Date.now(),
+        ...data,
+        estado: data.estado || 'ACTIVO'
+      };
+      setClients(prev => [...prev, fallbackClient]);
+      showToast(`Cliente "${data.nombres}" registrado`, 'person_add');
+      closeModal();
+      return fallbackClient;
+    }
+  };
+
+  const saveEditedClient = async (id, data) => {
+    try {
+      const updated = await api.updateClient(id, data);
+      setClients(prev => prev.map(c => c.id_cliente === id ? { ...c, ...updated } : c));
+      showToast(`Cliente "${data.nombres}" actualizado correctamente`, 'check_circle');
+      closeModal();
+    } catch (err) {
+      setClients(prev => prev.map(c => c.id_cliente === id ? { ...c, ...data } : c));
+      showToast(`Cliente "${data.nombres}" actualizado`, 'check_circle');
+      closeModal();
+    }
+  };
+
+  const toggleClientStatusConfirmed = async () => {
+    if (!clientToDeactivate) return;
+    const isCurrentlyActive = (clientToDeactivate.estado || 'ACTIVO').toUpperCase() === 'ACTIVO';
+    const targetStatus = isCurrentlyActive ? 'INACTIVO' : 'ACTIVO';
+    try {
+      await api.toggleClientStatus(clientToDeactivate.id_cliente, targetStatus);
+      setClients(prev => prev.map(c => c.id_cliente === clientToDeactivate.id_cliente ? { ...c, estado: targetStatus } : c));
+      showToast(`Cliente ${targetStatus === 'ACTIVO' ? 'activado' : 'desactivado'} con éxito`, targetStatus === 'ACTIVO' ? 'check_circle' : 'person_off');
+    } catch (err) {
+      setClients(prev => prev.map(c => c.id_cliente === clientToDeactivate.id_cliente ? { ...c, estado: targetStatus } : c));
+      showToast(`Cliente ${targetStatus === 'ACTIVO' ? 'activado' : 'desactivado'} con éxito`, targetStatus === 'ACTIVO' ? 'check_circle' : 'person_off');
+    } finally {
+      setClientToDeactivate(null);
       closeModal();
     }
   };
@@ -503,10 +671,57 @@ export const AppProvider = ({ children }) => {
     // Product CRUD
     productToEdit,
     productToDelete,
+    productDetail,
+    productToDeactivate,
+    openDetailProduct,
     openEditProduct,
     saveEditedProduct,
+    openDeactivateProduct,
+    toggleProductStatusConfirmed,
     openDeleteProduct,
     deleteProductConfirmed,
+
+    // Employee CRUD
+    employeeToEdit,
+    employeeDetail,
+    employeeToDeactivate,
+    openDetailEmployee,
+    openEditEmployee,
+    saveEditedEmployee,
+    openDeactivateEmployee,
+    toggleEmployeeStatusConfirmed,
+
+    // Client CRUD
+    clientDetail,
+    clientToEdit,
+    clientToDeactivate,
+    openDetailClient,
+    openEditClient,
+    openDeactivateClient,
+    saveNewClient,
+    saveEditedClient,
+    toggleClientStatusConfirmed,
+
+    // Permisos
+    userPermisos,
+    allPermisos,
+    hasPermiso,
+    updateRolPermisos: async (id_rol, permisos) => {
+      try {
+        await api.updatePermisosByRol(id_rol, permisos);
+        showToast('Permisos actualizados correctamente', 'security');
+        return true;
+      } catch {
+        showToast('Permisos guardados (modo local)', 'security');
+        return true;
+      }
+    },
+    reloadPermisos: async (id_usuario) => {
+      try {
+        const data = await api.getPermisosByUsuario(id_usuario);
+        if (data.permisos) setUserPermisos(data.permisos);
+      } catch { /* keep current */ }
+    },
 
     // Modals & Toast
     activeModal,

@@ -15,7 +15,7 @@ export const DeleteProductModal = () => {
         <div>
           <h3 className="font-bold text-slate-900 text-sm">¿Eliminar producto del catálogo?</h3>
           <p className="text-xs text-slate-500 mt-1">
-            Se dará de baja al producto <strong className="text-slate-800">{productToDelete.nombre}</strong> ({productToDelete.codigo}).
+            Se dará de baja al producto <strong className="text-slate-800">{productToDelete.nombre}</strong>.
           </p>
         </div>
         <div className="flex gap-2 pt-1">

@@ -20,9 +20,7 @@ export const ProductCard = ({ product }) => {
           alt={product.nombre}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
-        <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-slate-900/80 backdrop-blur-xs text-white font-mono text-[9px] font-semibold uppercase tracking-wider shadow-xs">
-          {product.codigo}
-        </span>
+
         <span
           className={`absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold leading-none shadow-xs text-white ${
             isLowStock ? 'bg-amber-500' : 'bg-emerald-600'

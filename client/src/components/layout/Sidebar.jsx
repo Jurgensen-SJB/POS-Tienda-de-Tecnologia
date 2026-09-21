@@ -1,21 +1,50 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
+import logoImg from '../../assets/img/logo.png';
 
 export const Sidebar = () => {
-  const { currentView, setCurrentView, openModal, showToast } = useApp();
+  const { currentView, setCurrentView, openModal, showToast, hasPermiso } = useApp();
 
   const isCurrent = (view) => currentView === view;
 
-  const getNavBtnClass = (view) =>
-    `nav-btn w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg font-medium transition-all ${
-      isCurrent(view)
-        ? 'bg-blue-600 text-white shadow-xs'
-        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-    }`;
-
-  const handleNav = (view, label) => {
+  const handleNav = (view, label, requiredPermiso) => {
+    if (requiredPermiso && !hasPermiso(requiredPermiso)) {
+      showToast(`Acceso restringido: No tienes permiso para acceder a ${label}`, 'warning');
+      return;
+    }
     setCurrentView(view);
     showToast(`Módulo: ${label}`, 'tab');
+  };
+
+  const renderNavItem = (view, label, icon, requiredPermiso, id) => {
+    const allowed = !requiredPermiso || hasPermiso(requiredPermiso);
+    const active = isCurrent(view);
+
+    return (
+      <button
+        key={view}
+        id={id}
+        onClick={() => handleNav(view, label, requiredPermiso)}
+        title={!allowed ? `Acceso restringido (requiere: ${requiredPermiso})` : label}
+        className={`nav-btn w-full flex items-center justify-between px-2.5 py-2 rounded-lg font-medium transition-all ${
+          active
+            ? 'bg-blue-600 text-white shadow-xs'
+            : allowed
+            ? 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            : 'text-slate-400 hover:bg-slate-50 opacity-60 cursor-not-allowed'
+        }`}
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="material-symbols-outlined text-base shrink-0">{icon}</span>
+          <span className="truncate">{label}</span>
+        </div>
+        {!allowed && (
+          <span className="material-symbols-outlined text-[13px] text-slate-400 shrink-0" title="Acceso restringido">
+            lock
+          </span>
+        )}
+      </button>
+    );
   };
 
   return (
@@ -23,11 +52,9 @@ export const Sidebar = () => {
       {/* Brand Header */}
       <div
         className="h-14 px-4 flex items-center gap-2.5 border-b border-slate-100 cursor-pointer select-none"
-        onClick={() => handleNav('pos', 'POS')}
+        onClick={() => handleNav('pos', 'POS', 'ver_pos')}
       >
-        <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-xs font-bold">
-          <span className="material-symbols-outlined text-lg">point_of_sale</span>
-        </div>
+        <img src={logoImg} alt="NexPOS Logo" className="w-8 h-8 object-contain shrink-0 drop-shadow-xs" />
         <div className="flex flex-col">
           <span className="text-sm font-bold text-slate-900 tracking-tight leading-none">
             Nex<span className="text-blue-600">POS</span>
@@ -46,30 +73,9 @@ export const Sidebar = () => {
             Operaciones
           </span>
           <div className="space-y-0.5">
-            <button
-              className={getNavBtnClass('pos')}
-              id="nav-pos"
-              onClick={() => handleNav('pos', 'POS')}
-            >
-              <span className="material-symbols-outlined text-base">point_of_sale</span>
-              <span>Terminal POS</span>
-            </button>
-            <button
-              className={getNavBtnClass('caja')}
-              id="nav-caja"
-              onClick={() => handleNav('caja', 'CAJA')}
-            >
-              <span className="material-symbols-outlined text-base">payments</span>
-              <span>Control de Caja</span>
-            </button>
-            <button
-              className={getNavBtnClass('facturacion')}
-              id="nav-facturacion"
-              onClick={() => handleNav('facturacion', 'FACTURACIÓN')}
-            >
-              <span className="material-symbols-outlined text-base">receipt_long</span>
-              <span>Facturación e Historial</span>
-            </button>
+            {renderNavItem('pos', 'Terminal POS', 'point_of_sale', 'ver_pos', 'nav-pos')}
+            {renderNavItem('caja', 'Control de Caja', 'payments', 'ver_caja', 'nav-caja')}
+            {renderNavItem('facturacion', 'Facturación e Historial', 'receipt_long', 'ver_caja', 'nav-facturacion')}
           </div>
         </div>
 
@@ -79,22 +85,9 @@ export const Sidebar = () => {
             Inventario y Compras
           </span>
           <div className="space-y-0.5">
-            <button
-              className={getNavBtnClass('stock')}
-              id="nav-stock"
-              onClick={() => handleNav('stock', 'STOCK')}
-            >
-              <span className="material-symbols-outlined text-base">inventory_2</span>
-              <span>Catálogo &amp; Stock</span>
-            </button>
-            <button
-              className={getNavBtnClass('compras')}
-              id="nav-compras"
-              onClick={() => handleNav('compras', 'COMPRAS')}
-            >
-              <span className="material-symbols-outlined text-base">local_shipping</span>
-              <span>Compras &amp; Proveedores</span>
-            </button>
+            {renderNavItem('stock', 'Catálogo & Stock', 'inventory_2', 'ver_inventario', 'nav-stock')}
+            {renderNavItem('categorias', 'Categorías', 'category', 'ver_inventario', 'nav-categorias')}
+            {renderNavItem('proveedores', 'Proveedores', 'local_shipping', 'ver_compras', 'nav-proveedores')}
           </div>
         </div>
 
@@ -104,14 +97,7 @@ export const Sidebar = () => {
             Gestión Comercial
           </span>
           <div className="space-y-0.5">
-            <button
-              className={getNavBtnClass('clientes')}
-              id="nav-clientes"
-              onClick={() => handleNav('clientes', 'CLIENTES')}
-            >
-              <span className="material-symbols-outlined text-base">group</span>
-              <span>Clientes</span>
-            </button>
+            {renderNavItem('clientes', 'Clientes', 'group', 'ver_clientes', 'nav-clientes')}
           </div>
         </div>
 
@@ -121,22 +107,8 @@ export const Sidebar = () => {
             Administración
           </span>
           <div className="space-y-0.5">
-            <button
-              className={getNavBtnClass('empleados')}
-              id="nav-empleados"
-              onClick={() => handleNav('empleados', 'EMPLEADOS')}
-            >
-              <span className="material-symbols-outlined text-base">badge</span>
-              <span>Empleados &amp; Permisos</span>
-            </button>
-            <button
-              className={getNavBtnClass('auditoria')}
-              id="nav-auditoria"
-              onClick={() => handleNav('auditoria', 'AUDITORÍA')}
-            >
-              <span className="material-symbols-outlined text-base">history_toggle_off</span>
-              <span>Auditoría del Sistema</span>
-            </button>
+            {renderNavItem('empleados', 'Empleados & Permisos', 'badge', 'ver_empleados', 'nav-empleados')}
+            {renderNavItem('auditoria', 'Auditoría del Sistema', 'history_toggle_off', 'ver_auditoria', 'nav-auditoria')}
           </div>
         </div>
       </div>

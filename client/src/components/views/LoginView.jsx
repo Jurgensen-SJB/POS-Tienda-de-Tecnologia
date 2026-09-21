@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import logoImg from '../../assets/img/logo.png';
+import fondoPOS from '../../assets/img/fondoPOS.png';
 
 export const LoginView = () => {
   const { login } = useApp();
@@ -28,17 +30,17 @@ export const LoginView = () => {
   };
 
   return (
-    <div className="h-screen w-screen flex items-center justify-center bg-slate-100 p-4 select-none relative overflow-hidden">
-      {/* Subtle Background Accents */}
-      <div className="absolute -top-32 -left-32 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div 
+      className="h-screen w-screen flex items-center justify-center bg-cover bg-center bg-no-repeat p-4 select-none relative overflow-hidden"
+      style={{ backgroundImage: `url(${fondoPOS})` }}
+    >
+      {/* Overlay to improve contrast and readability */}
+      <div className="absolute inset-0 bg-slate-900/35 backdrop-blur-[1px] pointer-events-none"></div>
 
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden relative z-10">
+      <div className="w-full max-w-md bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/40 overflow-hidden relative z-10">
         {/* Header Branding */}
         <div className="p-6 text-center border-b border-slate-100 bg-gradient-to-b from-white to-slate-50/50">
-          <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md mx-auto mb-3">
-            <span className="material-symbols-outlined text-2xl">point_of_sale</span>
-          </div>
+          <img src={logoImg} alt="NexPOS Logo" className="w-16 h-16 mx-auto mb-3 object-contain drop-shadow-md" />
           <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
             Nex<span className="text-blue-600">POS</span> Suite
           </h1>

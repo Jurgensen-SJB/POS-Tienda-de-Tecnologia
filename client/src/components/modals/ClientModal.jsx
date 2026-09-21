@@ -71,7 +71,7 @@ export const ClientModal = () => {
             Clientes Frecuentes Registrados:
           </span>
           <div className="space-y-1 max-h-36 overflow-y-auto">
-            {clients.filter(c => c.id_cliente !== 1).map((c) => {
+            {clients.filter(c => c.id_cliente !== 1 && (c.estado || 'ACTIVO').toUpperCase() === 'ACTIVO').map((c) => {
               const fullName = `${c.nombres} ${c.apellidos || ''}`.trim();
               const docLabel = `${c.tipo_identificacion || 'DOC'}: ${c.numero_identificacion}`;
               return (

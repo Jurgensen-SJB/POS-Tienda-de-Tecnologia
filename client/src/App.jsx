@@ -12,10 +12,13 @@ import { LoginView } from './components/views/LoginView';
 import { PosView } from './components/views/PosView';
 import { CajaView } from './components/views/CajaView';
 import { StockView } from './components/views/StockView';
+import { CategoriasView } from './components/views/CategoriasView';
 import { ComprasView } from './components/views/ComprasView';
+import { ProveedoresView } from './components/views/ProveedoresView';
 import { ClientesView } from './components/views/ClientesView';
 import { EmpleadosView } from './components/views/EmpleadosView';
 import { AuditoriaView } from './components/views/AuditoriaView';
+import { AccessRestrictedView } from './components/views/AccessRestrictedView';
 
 // Modals
 import { CheckoutSuccessModal } from './components/modals/CheckoutSuccessModal';
@@ -26,12 +29,21 @@ import { PromoModal } from './components/modals/PromoModal';
 import { ClientModal } from './components/modals/ClientModal';
 import { AnularModal } from './components/modals/AnularModal';
 import { NewUserModal } from './components/modals/NewUserModal';
+import { EditUserModal } from './components/modals/EditUserModal';
+import { EmployeeDetailModal } from './components/modals/EmployeeDetailModal';
+import { DeactivateUserModal } from './components/modals/DeactivateUserModal';
 import { NewProductModal } from './components/modals/NewProductModal';
 import { EditProductModal } from './components/modals/EditProductModal';
 import { DeleteProductModal } from './components/modals/DeleteProductModal';
+import { ProductDetailModal } from './components/modals/ProductDetailModal';
+import { DeactivateProductModal } from './components/modals/DeactivateProductModal';
+import { NewClientModal } from './components/modals/NewClientModal';
+import { ClientDetailModal } from './components/modals/ClientDetailModal';
+import { EditClientModal } from './components/modals/EditClientModal';
+import { DeactivateClientModal } from './components/modals/DeactivateClientModal';
 
 export function AppContent() {
-  const { currentView, currentUser } = useApp();
+  const { currentView, currentUser, hasPermiso } = useApp();
 
   // Listen to keyboard shortcuts (F12, F2, F4, F7, F9, Escape)
   useKeyboardShortcuts();
@@ -46,7 +58,25 @@ export function AppContent() {
     );
   }
 
+  const VIEW_CONFIG = {
+    pos:         { perm: 'ver_pos',         name: 'Terminal POS' },
+    caja:        { perm: 'ver_caja',        name: 'Control de Caja' },
+    facturacion: { perm: 'ver_caja',        name: 'Facturación e Historial' },
+    stock:       { perm: 'ver_inventario',  name: 'Catálogo & Stock' },
+    categorias:  { perm: 'ver_inventario',  name: 'Gestión de Categorías' },
+    proveedores: { perm: 'ver_compras',     name: 'Gestión de Proveedores' },
+    compras:     { perm: 'ver_compras',     name: 'Compras & Proveedores' },
+    clientes:    { perm: 'ver_clientes',    name: 'Clientes' },
+    empleados:   { perm: 'ver_empleados',   name: 'Empleados & Permisos' },
+    auditoria:   { perm: 'ver_auditoria',   name: 'Auditoría del Sistema' },
+  };
+
   const renderView = () => {
+    const config = VIEW_CONFIG[currentView];
+    if (config && config.perm && !hasPermiso(config.perm)) {
+      return <AccessRestrictedView requiredPermiso={config.perm} moduleName={config.name} />;
+    }
+
     switch (currentView) {
       case 'pos':
         return <PosView />;
@@ -55,8 +85,12 @@ export function AppContent() {
         return <CajaView />;
       case 'stock':
         return <StockView />;
+      case 'categorias':
+        return <CategoriasView />;
+      case 'proveedores':
+        return <ProveedoresView />;
       case 'compras':
-        return <ComprasView />;
+        return <ProveedoresView />;
       case 'clientes':
         return <ClientesView />;
       case 'empleados':
@@ -96,9 +130,18 @@ export function AppContent() {
       <ClientModal />
       <AnularModal />
       <NewUserModal />
+      <EditUserModal />
+      <EmployeeDetailModal />
+      <DeactivateUserModal />
       <NewProductModal />
       <EditProductModal />
       <DeleteProductModal />
+      <ProductDetailModal />
+      <DeactivateProductModal />
+      <NewClientModal />
+      <ClientDetailModal />
+      <EditClientModal />
+      <DeactivateClientModal />
     </div>
   );
 }
