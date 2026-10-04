@@ -199,7 +199,7 @@ export const NewProductModal = () => {
 
           {/* Supplier Selector */}
           <div>
-            <label className="font-semibold text-slate-700 block mb-1 flex items-center gap-1.5">
+            <label className="font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
               <span className="material-symbols-outlined text-sm text-blue-600">local_shipping</span>
               Proveedor Asociado (Distribuidor Autorizado)
             </label>

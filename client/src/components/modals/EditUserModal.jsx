@@ -286,7 +286,7 @@ export const EditUserModal = () => {
 
                     {/* Editar nombre de usuario */}
                     <div>
-                      <label className="font-bold text-slate-700 block mb-1.5 flex items-center gap-1">
+                      <label className="font-bold text-slate-700 mb-1.5 flex items-center gap-1">
                         <span className="material-symbols-outlined" style={{fontSize:'13px'}}>edit</span>
                         Cambiar Nombre de Usuario
                       </label>
