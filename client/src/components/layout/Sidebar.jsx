@@ -74,8 +74,7 @@ export const Sidebar = () => {
           </span>
           <div className="space-y-0.5">
             {renderNavItem('pos', 'Terminal POS', 'point_of_sale', 'ver_pos', 'nav-pos')}
-            {renderNavItem('caja', 'Control de Caja', 'payments', 'ver_caja', 'nav-caja')}
-            {renderNavItem('facturacion', 'Facturación e Historial', 'receipt_long', 'ver_caja', 'nav-facturacion')}
+            {renderNavItem('caja', 'Facturación & Caja', 'receipt_long', 'ver_caja', 'nav-caja')}
           </div>
         </div>
 
@@ -88,6 +87,7 @@ export const Sidebar = () => {
             {renderNavItem('stock', 'Catálogo & Stock', 'inventory_2', 'ver_inventario', 'nav-stock')}
             {renderNavItem('categorias', 'Categorías', 'category', 'ver_inventario', 'nav-categorias')}
             {renderNavItem('proveedores', 'Proveedores', 'local_shipping', 'ver_compras', 'nav-proveedores')}
+            {renderNavItem('compras', 'Historial de Compras', 'shopping_bag', 'ver_compras', 'nav-compras')}
           </div>
         </div>
 
@@ -107,6 +107,7 @@ export const Sidebar = () => {
             Administración
           </span>
           <div className="space-y-0.5">
+            {renderNavItem('estadisticas', 'Panel de Estadísticas', 'insights', 'ver_auditoria', 'nav-estadisticas')}
             {renderNavItem('empleados', 'Empleados & Permisos', 'badge', 'ver_empleados', 'nav-empleados')}
             {renderNavItem('auditoria', 'Auditoría del Sistema', 'history_toggle_off', 'ver_auditoria', 'nav-auditoria')}
           </div>

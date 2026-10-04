@@ -16,6 +16,7 @@ export const AppProvider = ({ children }) => {
   const [caja, setCaja] = useState(null);
   const [providers, setProviders] = useState([]);
   const [purchases, setPurchases] = useState([]);
+  const [paymentMethods, setPaymentMethods] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // POS State
@@ -34,8 +35,27 @@ export const AppProvider = ({ children }) => {
   const [ticketCounter, setTicketCounter] = useState(892);
   const [lastItemAdded, setLastItemAdded] = useState('—');
 
-  // User & Roles (Null by default so app starts on Login page)
-  const [currentUser, setCurrentUser] = useState(null);
+  // User & Roles (Load from localStorage if exists, null otherwise)
+  const [currentUser, setCurrentUserState] = useState(() => {
+    try {
+      const saved = localStorage.getItem('pos_current_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const setCurrentUser = (user) => {
+    setCurrentUserState(user);
+    try {
+      if (user) {
+        localStorage.setItem('pos_current_user', JSON.stringify(user));
+      } else {
+        localStorage.removeItem('pos_current_user');
+      }
+    } catch (_) {}
+  };
+
   const [userPermisos, setUserPermisos] = useState([]);
   const [allPermisos, setAllPermisos] = useState([]);
 
@@ -55,60 +75,87 @@ export const AppProvider = ({ children }) => {
       setCurrentView('pos');
       return { success: true };
     } catch (err) {
-      // Fallback local matching if server is temporarily unreachable
+      // Si el error viene del servidor (mensaje definido), mostrarlo sin intentar fallback local
+      // Esto incluye: 403 usuario inactivo, 401 contraseña incorrecta, etc.
+      const isNetworkError = err instanceof TypeError || err.message?.includes('fetch') || err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError');
+      const isInactiveError = err.message?.includes('inactiva') || err.message?.includes('desactivado') || err.message?.includes('INACTIVO');
+
+      // Si el usuario está inactivo, nunca usar fallback — bloquear siempre
+      if (isInactiveError) {
+        showToast('Cuenta inactiva. Contacta al administrador del sistema.', 'block');
+        return { success: false, error: err.message };
+      }
+
+      // Solo usar fallback local si el servidor está inalcanzable (error de red)
+      if (!isNetworkError) {
+        // El servidor respondió pero con credenciales inválidas
+        const msg = err.message || 'Credenciales inválidas. Verifica tu usuario y contraseña.';
+        showToast(msg, 'error');
+        return { success: false, error: msg };
+      }
+
+      // Fallback local cuando el servidor no está disponible
       const clean = identifier.trim().toLowerCase();
-      if ((clean === 'admin' || clean === 'elena.morales@nexpos.local') && password === 'admin123') {
-        const adminUser = {
-          id_usuario: 1,
-          nombre: 'Elena Morales',
-          nombre_completo: 'Elena Morales',
-          rol: 'Administrador General',
-          cargo: 'Administradora General',
-          correo: 'elena.morales@nexpos.local',
-          permisos: ['ver_pos','cobrar','aplicar_descuento','anular_venta','ver_caja','abrir_caja','cerrar_caja','corte_parcial','ver_inventario','crear_producto','editar_producto','ver_clientes','crear_cliente','ver_empleados','crear_empleado','ver_auditoria','ver_compras','crear_compra'],
-          avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=120&auto=format&fit=crop&q=80'
-        };
-        setCurrentUser(adminUser);
-        setUserPermisos(adminUser.permisos);
+      
+      // Definición de cuentas de fallback con su estado
+      const fallbackAccounts = [
+        {
+          identifier: ['admin', 'elena', 'elena.morales', 'elena.morales@nexpos.local'],
+          password: 'admin123',
+          estado: 'ACTIVO',
+          user: {
+            id_usuario: 1, id_empleado: 1, nombre: 'Elena Morales', nombre_completo: 'Elena Morales',
+            rol: 'Administrador General', cargo: 'Administradora General',
+            correo: 'elena.morales@nexpos.local', nombre_usuario: 'admin',
+            permisos: ['ver_pos','cobrar','aplicar_descuento','anular_venta','ver_caja','abrir_caja','cerrar_caja','corte_parcial','ver_inventario','crear_producto','editar_producto','ver_clientes','crear_cliente','ver_empleados','crear_empleado','ver_auditoria','ver_compras','crear_compra'],
+            avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=120&auto=format&fit=crop&q=80'
+          }
+        },
+        {
+          identifier: ['cajero', 'camila', 'camila.valenzuela', 'camila.valenzuela@nexpos.local'],
+          password: 'cajero123',
+          estado: 'ACTIVO',
+          user: {
+            id_usuario: 3, id_empleado: 3, nombre: 'Camila Valenzuela', nombre_completo: 'Camila Valenzuela',
+            rol: 'Cajero', cargo: 'Cajera Turno Mañana',
+            correo: 'camila.valenzuela@nexpos.local', nombre_usuario: 'cajero',
+            permisos: ['ver_pos','cobrar','ver_caja','ver_clientes'],
+            avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=120&auto=format&fit=crop&q=80'
+          }
+        },
+        {
+          identifier: ['supervisor', 'rodrigo', 'rodrigo.alarcon', 'rodrigo.alarcon@nexpos.local'],
+          password: 'caja123',
+          estado: 'ACTIVO',
+          user: {
+            id_usuario: 2, id_empleado: 2, nombre: 'Rodrigo Alarcón', nombre_completo: 'Rodrigo Alarcón',
+            rol: 'Supervisor', cargo: 'Supervisor de Caja',
+            correo: 'rodrigo.alarcon@nexpos.local', nombre_usuario: 'rodrigo.alarcon',
+            permisos: ['ver_pos','cobrar','aplicar_descuento','anular_venta','ver_caja','abrir_caja','cerrar_caja','corte_parcial','ver_inventario','ver_clientes','crear_cliente','ver_empleados'],
+            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80'
+          }
+        }
+      ];
+
+      const match = fallbackAccounts.find(
+        a => a.identifier.includes(clean) && a.password === password
+      );
+
+      if (match) {
+        // Verificar estado en fallback también
+        if ((match.estado || 'ACTIVO').toUpperCase() === 'INACTIVO') {
+          showToast('Cuenta inactiva. Contacta al administrador del sistema.', 'block');
+          return { success: false, error: 'Usuario inactivo' };
+        }
+        setCurrentUser(match.user);
+        setUserPermisos(match.user.permisos);
         api.getAllPermisos().then(list => setAllPermisos(list)).catch(() => {});
-        showToast('¡Bienvenida, Elena Morales (Administrador General)!', 'verified_user');
-        setCurrentView('pos');
-        return { success: true };
-      } else if ((clean === 'cajero' || clean === 'camila.valenzuela@nexpos.local') && password === 'cajero123') {
-        const cajeroUser = {
-          id_usuario: 3,
-          nombre: 'Camila Valenzuela',
-          nombre_completo: 'Camila Valenzuela',
-          rol: 'Cajero',
-          cargo: 'Cajera Turno Mañana',
-          correo: 'camila.valenzuela@nexpos.local',
-          permisos: ['ver_pos','cobrar','ver_caja','ver_clientes'],
-          avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=120&auto=format&fit=crop&q=80'
-        };
-        setCurrentUser(cajeroUser);
-        setUserPermisos(cajeroUser.permisos);
-        showToast('¡Bienvenida, Camila Valenzuela (Cajera)!', 'verified_user');
-        setCurrentView('pos');
-        return { success: true };
-      } else if ((clean === 'supervisor' || clean === 'rodrigo.alarcon@nexpos.local') && password === 'caja123') {
-        const supUser = {
-          id_usuario: 2,
-          nombre: 'Rodrigo Alarcón',
-          nombre_completo: 'Rodrigo Alarcón',
-          rol: 'Cajero',
-          cargo: 'Supervisor de Caja',
-          correo: 'rodrigo.alarcon@nexpos.local',
-          permisos: ['ver_pos','cobrar','aplicar_descuento','anular_venta','ver_caja','abrir_caja','cerrar_caja','corte_parcial','ver_inventario','ver_clientes','crear_cliente','ver_empleados'],
-          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80'
-        };
-        setCurrentUser(supUser);
-        setUserPermisos(supUser.permisos);
-        showToast('¡Bienvenido, Rodrigo Alarcón (Supervisor)!', 'verified_user');
+        showToast(`¡Bienvenido/a, ${match.user.nombre_completo}!`, 'verified_user');
         setCurrentView('pos');
         return { success: true };
       }
 
-      const msg = err.message || 'Credenciales inválidas. Verifica tu usuario y contraseña.';
+      const msg = 'Credenciales inválidas. Verifica tu usuario y contraseña.';
       showToast(msg, 'error');
       return { success: false, error: msg };
     }
@@ -121,7 +168,8 @@ export const AppProvider = ({ children }) => {
   };
 
   // Modals
-  const [activeModal, setActiveModal] = useState(null); // 'checkout-success' | 'shortcuts' | 'turno' | 'manual-item' | 'promo' | 'client' | 'anular' | 'new-user' | 'edit-user' | 'detail-user' | 'deactivate-user' | 'new-product' | 'edit-product' | 'delete-product'
+  const [activeModal, setActiveModal] = useState(null); // 'checkout-success' | 'shortcuts' | 'turno' | 'manual-item' | 'promo' | 'client' | 'anular' | 'new-user' | 'edit-user' | 'detail-user' | 'deactivate-user' | 'new-product' | 'edit-product' | 'delete-product' | 'new-purchase'
+  const [purchaseInitialProduct, setPurchaseInitialProduct] = useState(null);
   const [completedSaleData, setCompletedSaleData] = useState(null);
   const [productToEdit, setProductToEdit] = useState(null);
   const [productToDelete, setProductToDelete] = useState(null);
@@ -133,6 +181,8 @@ export const AppProvider = ({ children }) => {
   const [clientDetail, setClientDetail] = useState(null);
   const [clientToEdit, setClientToEdit] = useState(null);
   const [clientToDeactivate, setClientToDeactivate] = useState(null);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [loadingInvoice, setLoadingInvoice] = useState(false);
 
   // Toast
   const [toast, setToast] = useState({ visible: false, text: '', icon: 'check_circle' });
@@ -145,13 +195,21 @@ export const AppProvider = ({ children }) => {
   };
 
   const openModal = (name) => setActiveModal(name);
-  const closeModal = () => setActiveModal(null);
+  const closeModal = () => {
+    setActiveModal(null);
+    setPurchaseInitialProduct(null);
+  };
+
+  const openPurchaseModal = (product = null) => {
+    setPurchaseInitialProduct(product);
+    setActiveModal('new-purchase');
+  };
 
   // Load initial data
   const loadData = async () => {
     try {
       setLoading(true);
-      const [prodsData, catsData, clientsData, empsData, salesData, cajaData, provsData, purchasesData] = await Promise.all([
+      const [prodsData, catsData, clientsData, empsData, salesData, cajaData, provsData, purchasesData, paymentMethodsData] = await Promise.all([
         api.getProducts().catch(() => []),
         api.getCategories().catch(() => []),
         api.getClients().catch(() => []),
@@ -160,6 +218,7 @@ export const AppProvider = ({ children }) => {
         api.getCajaActual().catch(() => null),
         api.getProviders().catch(() => []),
         api.getPurchases().catch(() => []),
+        api.getPaymentMethods().catch(() => []),
       ]);
 
       if (prodsData.length) setProducts(prodsData);
@@ -173,6 +232,7 @@ export const AppProvider = ({ children }) => {
       if (cajaData) setCaja(cajaData);
       if (provsData.length) setProviders(provsData);
       if (purchasesData.length) setPurchases(purchasesData);
+      if (paymentMethodsData.length) setPaymentMethods(paymentMethodsData);
     } catch (err) {
       console.error('Error loading initial data:', err);
     } finally {
@@ -184,11 +244,25 @@ export const AppProvider = ({ children }) => {
     loadData();
   }, []);
 
-  // Cart Management
+  // Cart Management with strict stock limits
   const addToCart = (product, qty = 1) => {
+    const availableStock = product.stock !== undefined ? product.stock : 0;
+    if (availableStock <= 0) {
+      showToast(`¡Agotado! "${product.nombre}" no tiene existencias`, 'warning');
+      return;
+    }
+
+    const existing = cart.find(item => item.id_producto === product.id_producto);
+    const currentInCart = existing ? existing.qty : 0;
+
+    if (currentInCart + qty > availableStock) {
+      showToast(`No puedes superar el stock actual (${availableStock} unid. de "${product.nombre}")`, 'warning');
+      return;
+    }
+
     setCart(prev => {
-      const existing = prev.find(item => item.id_producto === product.id_producto);
-      if (existing) {
+      const itemExists = prev.find(item => item.id_producto === product.id_producto);
+      if (itemExists) {
         return prev.map(item =>
           item.id_producto === product.id_producto
             ? { ...item, qty: item.qty + qty }
@@ -202,6 +276,7 @@ export const AppProvider = ({ children }) => {
           codigo: product.codigo || '',
           name: product.nombre,
           price: parseFloat(product.precio_venta),
+          stock: availableStock,
           qty,
           discount: 0
         }
@@ -217,6 +292,7 @@ export const AppProvider = ({ children }) => {
       codigo: 'MANUAL',
       name,
       price: parseFloat(price),
+      stock: 9999,
       qty: parseInt(qty),
       discount: 0
     };
@@ -234,6 +310,15 @@ export const AppProvider = ({ children }) => {
         showToast(`Removido: ${item.name}`);
         return prev.filter(i => i.id_producto !== id_producto);
       }
+
+      // Validar contra el stock real del producto
+      const prod = products.find(p => p.id_producto === id_producto);
+      const availableStock = prod && prod.stock !== undefined ? prod.stock : (item.stock || 9999);
+      if (delta > 0 && newQty > availableStock) {
+        showToast(`Stock máximo alcanzado (${availableStock} unid. disponibles de ${item.name})`, 'warning');
+        return prev;
+      }
+
       return prev.map(i => i.id_producto === id_producto ? { ...i, qty: newQty } : i);
     });
   };
@@ -246,20 +331,98 @@ export const AppProvider = ({ children }) => {
 
   const clearCart = () => {
     setCart([]);
+    setDiscountPct(0);
+    setDiscountLabel('Descuento:');
     showToast('Ticket anulado correctamente', 'delete_sweep');
   };
 
+  const applyDiscount = (pct, label = '') => {
+    const cleanPct = Math.min(100, Math.max(0, parseFloat(pct) || 0));
+    setDiscountPct(cleanPct);
+    setDiscountLabel(label || (cleanPct > 0 ? `Descuento Especial (-${cleanPct}%):` : 'Descuento:'));
+    closeModal();
+    if (cleanPct > 0) {
+      showToast(`Descuento de ${cleanPct}% aplicado al ticket`, 'percent');
+    } else {
+      showToast('Descuento general removido', 'info');
+    }
+  };
+
+  const resetNewSale = () => {
+    setCart([]);
+    setCurrentClient({ id_cliente: 1, name: 'Consumidor Final', doc: 'DNI/RUC: Sin registrar' });
+    setCashReceived('');
+    setDiscountPct(0);
+    setDiscountLabel('Descuento:');
+    setCompletedSaleData(null);
+    closeModal();
+    showToast('Nueva venta lista para escanear', 'point_of_sale');
+  };
+
+  const setItemDiscount = (id_producto, pct) => {
+    const cleanPct = Math.min(100, Math.max(0, parseFloat(pct) || 0));
+    setCart(prev => prev.map(item => {
+      if (item.id_producto === id_producto) {
+        return { ...item, discount: cleanPct };
+      }
+      return item;
+    }));
+    if (cleanPct > 0) {
+      showToast(`Descuento de ${cleanPct}% aplicado al producto`);
+    } else {
+      showToast('Descuento de producto removido');
+    }
+  };
+
   // Calculations
-  const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
-  const discountAmount = subtotal * (discountPct / 100);
-  const taxableBase = subtotal - discountAmount;
+  const grossSubtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+  const subtotal = grossSubtotal;
+  const itemDiscountsTotal = cart.reduce((acc, item) => {
+    const itemDiscPct = item.discount || 0;
+    return acc + (item.price * item.qty * (itemDiscPct / 100));
+  }, 0);
+  const subtotalAfterItemDiscounts = Math.max(0, grossSubtotal - itemDiscountsTotal);
+  const saleDiscountAmount = subtotalAfterItemDiscounts * (discountPct / 100);
+  const discountAmount = itemDiscountsTotal + saleDiscountAmount;
+  const taxableBase = Math.max(0, grossSubtotal - discountAmount);
   const tax = taxableBase * 0.18;
   const grandTotal = Math.max(0, taxableBase + tax);
   const totalUnits = cart.reduce((acc, item) => acc + item.qty, 0);
 
+  // Dynamic discount label
+  const activeDiscountLabel = (() => {
+    if (itemDiscountsTotal > 0 && discountPct > 0) {
+      return `Descuento (Productos + Promo ${discountPct}%):`;
+    }
+    if (itemDiscountsTotal > 0) {
+      return 'Descuento en Productos:';
+    }
+    if (discountPct > 0) {
+      return discountLabel || `Descuento Especial (-${discountPct}%):`;
+    }
+    return 'Descuento:';
+  })();
+
+  // Helper: resolve payMethod (string legacy or object from formas_pago table)
+  const resolvePayMethod = () => {
+    if (typeof payMethod === 'object' && payMethod !== null) {
+      const n = (payMethod.nombre || '').toLowerCase();
+      const type = n.includes('efectivo') || n.includes('cash') ? 'cash'
+        : n.includes('tarjeta') || n.includes('card') || n.includes('pos') ? 'card'
+        : n.includes('qr') || n.includes('transfer') || n.includes('billetera') || n.includes('digital') ? 'qr'
+        : 'qr';
+      return { type, nombre: payMethod.nombre, id: payMethod.id_forma_pago };
+    }
+    // Legacy string
+    const type = payMethod === 'cash' ? 'cash' : payMethod === 'card' ? 'card' : 'qr';
+    const nombre = type === 'cash' ? 'Efectivo' : type === 'card' ? 'Tarjeta POS' : 'QR / Transferencia';
+    return { type, nombre, id: type === 'cash' ? 1 : type === 'card' ? 2 : 3 };
+  };
+
   // Vuelto calculation
   const receivedNum = parseFloat(cashReceived) || 0;
-  const vuelto = payMethod === 'cash' ? Math.max(0, receivedNum - grandTotal) : 0;
+  const resolvedPay = resolvePayMethod();
+  const vuelto = resolvedPay.type === 'cash' ? Math.max(0, receivedNum - grandTotal) : 0;
 
   // Checkout Execution
   const executeCheckout = async () => {
@@ -268,22 +431,57 @@ export const AppProvider = ({ children }) => {
       return;
     }
 
+    // Validar existencias de todos los productos en el ticket antes de cobrar
+    for (const item of cart) {
+      const prod = products.find(p => p.id_producto === item.id_producto);
+      if (prod && prod.stock !== undefined && item.qty > prod.stock) {
+        showToast(
+          `No puedes vender ${item.qty} unid. de "${item.name}". Solo quedan ${prod.stock} disponibles en almacén.`,
+          'warning'
+        );
+        return;
+      }
+    }
+
     const payload = {
       id_cliente: currentClient.id_cliente || 1,
-      items: cart.map(i => ({
-        id_producto: typeof i.id_producto === 'number' ? i.id_producto : 1,
-        cant: i.qty,
-        precio_venta: i.price,
-        subtotal: i.price * i.qty
-      })),
-      subtotal,
+      items: cart.map(i => {
+        const itemDiscPct = i.discount || 0;
+        const itemDisc = i.price * i.qty * (itemDiscPct / 100);
+        const remaining = (i.price * i.qty) - itemDisc;
+        const globalShare = discountPct > 0 ? remaining * (discountPct / 100) : 0;
+        const totalLineDisc = itemDisc + globalShare;
+        const lineSubtotal = (i.price * i.qty) - totalLineDisc;
+        return {
+          id_producto: typeof i.id_producto === 'number' ? i.id_producto : 1,
+          cant: i.qty,
+          precio_venta: i.price,
+          descuento: totalLineDisc,
+          discount: itemDiscPct > 0 ? itemDiscPct : discountPct,
+          subtotal: lineSubtotal
+        };
+      }),
+      subtotal: grossSubtotal,
       descuento_total: discountAmount,
       impuesto: tax,
       total: grandTotal,
-      id_forma_pago: payMethod === 'cash' ? 1 : (payMethod === 'card' ? 2 : 3),
-      metodo_nombre: payMethod === 'cash' ? 'Efectivo' : (payMethod === 'card' ? 'Tarjeta POS' : 'QR / Transf.'),
-      id_usuario: 1,
-      id_caja: caja?.id_caja || 1
+      id_forma_pago: (() => {
+        if (typeof payMethod === 'object' && payMethod?.id_forma_pago) return payMethod.id_forma_pago;
+        if (typeof payMethod === 'number') return payMethod;
+        const found = paymentMethods.find(pm => pm.nombre.toLowerCase().includes(String(payMethod).toLowerCase()));
+        if (found) return found.id_forma_pago;
+        return payMethod === 'cash' ? 1 : (payMethod === 'card' ? 2 : 3);
+      })(),
+      metodo_nombre: (() => {
+        if (typeof payMethod === 'object' && payMethod?.nombre) return payMethod.nombre;
+        const found = paymentMethods.find(pm => pm.id_forma_pago === payMethod || pm.nombre.toLowerCase().includes(String(payMethod).toLowerCase()));
+        if (found) return found.nombre;
+        return payMethod === 'cash' ? 'Efectivo' : (payMethod === 'card' ? 'Tarjeta POS' : 'QR / Transf.');
+      })(),
+      id_usuario: currentUser?.id_usuario || 1,
+      id_caja: caja?.id_caja || 1,
+      cajero: currentUser?.nombre_completo || currentUser?.nombre || currentUser?.nombre_usuario || 'Usuario',
+      cajeroRol: currentUser?.rol || 'Cajero'
     };
 
     try {
@@ -294,29 +492,61 @@ export const AppProvider = ({ children }) => {
         date: new Date().toLocaleDateString('es-ES') + ' ' + new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
         clientName: currentClient.name,
         clientDoc: currentClient.doc,
-        payMethod: payMethod.toUpperCase(),
-        items: [...cart],
-        subtotal,
+        payMethod: resolvedPay.nombre,
+        items: cart.map(i => {
+          const itemDiscPct = i.discount || 0;
+          const itemDisc = i.price * i.qty * (itemDiscPct / 100);
+          const remaining = (i.price * i.qty) - itemDisc;
+          const globalShare = discountPct > 0 ? remaining * (discountPct / 100) : 0;
+          const totalDisc = itemDisc + globalShare;
+          return {
+            ...i,
+            discountPct: itemDiscPct > 0 ? itemDiscPct : discountPct,
+            discountAmount: totalDisc,
+            itemTotal: (i.qty * i.price) - totalDisc
+          };
+        }),
+        subtotal: grossSubtotal,
         discountAmount,
+        discountPct,
+        discountLabel: activeDiscountLabel,
+        itemDiscountsTotal,
+        saleDiscountAmount,
         tax,
         total: grandTotal,
-        received: payMethod === 'cash' ? receivedNum : grandTotal,
+        received: resolvedPay.type === 'cash' ? receivedNum : grandTotal,
         vuelto
       };
 
       setCompletedSaleData(saleDetails);
 
-      // Add to local invoices
+      // Add to local invoices with complete fields
+      const now = new Date();
       const newInvoice = {
         id_venta: res.id_venta,
+        id_usuario: currentUser?.id_usuario || 1,
+        cajero: currentUser?.nombre_completo || currentUser?.nombre || 'Camila Valenzuela',
         numero_factura: saleDetails.invoiceNumber,
         cliente: currentClient.name,
-        fecha: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+        fecha: now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+        fecha_dia: now.toLocaleDateString('es-ES'),
+        fecha_completa: now.toLocaleDateString('es-ES') + ' ' + now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
         metodo: payload.metodo_nombre,
         total: grandTotal,
-        estado: 'COMPLETADA'
+        subtotal: grossSubtotal,
+        descuento_total: discountAmount,
+        impuesto: tax,
+        estado: 'COMPLETADA',
+        items: saleDetails.items
       };
       setInvoices(prev => [newInvoice, ...prev]);
+
+      // Refrescar facturas del backend en background
+      api.getSales().then(sales => {
+        if (Array.isArray(sales) && sales.length > 0) {
+          setInvoices(sales);
+        }
+      }).catch(() => {});
 
       // Update product stock in memory
       setProducts(prev => prev.map(p => {
@@ -332,13 +562,13 @@ export const AppProvider = ({ children }) => {
         const added = grandTotal;
         setCaja(prev => {
           if (!prev) return prev;
-          if (payMethod === 'cash') {
+          if (resolvedPay.type === 'cash') {
             return {
               ...prev,
               ventas_efectivo: (parseFloat(prev.ventas_efectivo) || 0) + added,
               total_en_caja: (parseFloat(prev.total_en_caja) || 0) + added
             };
-          } else if (payMethod === 'card') {
+          } else if (resolvedPay.type === 'card') {
             return { ...prev, ventas_tarjeta: (parseFloat(prev.ventas_tarjeta) || 0) + added };
           } else {
             return { ...prev, ventas_transferencia: (parseFloat(prev.ventas_transferencia) || 0) + added };
@@ -347,28 +577,18 @@ export const AppProvider = ({ children }) => {
       }
 
       setTicketCounter(c => c + 1);
+      // Limpiar datos para una nueva venta de inmediato
+      setCart([]);
+      setCurrentClient({ id_cliente: 1, name: 'Consumidor Final', doc: 'DNI/RUC: Sin registrar' });
+      setCashReceived('');
+      setDiscountPct(0);
+      setDiscountLabel('Descuento:');
       openModal('checkout-success');
     } catch (err) {
       showToast('Error al procesar cobro: ' + err.message, 'error');
     }
   };
 
-  const resetNewSale = () => {
-    closeModal();
-    setCart([]);
-    setCurrentClient({ id_cliente: 1, name: 'Consumidor Final', doc: 'DNI/RUC: Sin registrar' });
-    setCashReceived('');
-    setDiscountPct(0);
-    setDiscountLabel('Descuento:');
-    showToast('Terminal lista para nueva venta', 'point_of_sale');
-  };
-
-  const applyDiscount = (pct, label = `Descuento Especial (-${pct}%):`) => {
-    setDiscountPct(pct);
-    setDiscountLabel(label);
-    closeModal();
-    showToast(`Descuento aplicado: ${pct}%`);
-  };
 
   const assignClient = (name, doc, id_cliente = null) => {
     setCurrentClient({ id_cliente: id_cliente || Date.now(), name, doc });
@@ -378,11 +598,103 @@ export const AppProvider = ({ children }) => {
 
   const anularFactura = async (id_venta) => {
     try {
-      await api.anularSale(id_venta);
-      setInvoices(prev => prev.map(inv => inv.id_venta === id_venta ? { ...inv, estado: 'ANULADA' } : inv));
-      showToast(`Comprobante anulado y stock revertido`, 'undo');
+      await api.anularSale(id_venta, {
+        id_usuario: currentUser?.id_usuario || 1,
+        cajero: currentUser?.nombre_completo || currentUser?.nombre || currentUser?.nombre_usuario || 'Usuario',
+        cajeroRol: currentUser?.rol || 'Usuario'
+      });
+      setInvoices(prev => prev.map(inv => (inv.id_venta === id_venta || inv.numero_factura === id_venta) ? { ...inv, estado: 'ANULADA' } : inv));
+      
+      // Actualizar existencias de inventario en tiempo real
+      try {
+        const [updatedProds, updatedSales] = await Promise.all([
+          api.getProducts(),
+          api.getSales()
+        ]);
+        if (Array.isArray(updatedProds)) setProducts(updatedProds);
+        if (Array.isArray(updatedSales)) setInvoices(updatedSales);
+      } catch {}
+
+      showToast(`Venta anulada y existencias restauradas en almacén`, 'undo');
     } catch (err) {
-      showToast('Error al anular venta', 'error');
+      showToast('Error al anular venta: ' + (err.message || ''), 'error');
+    }
+  };
+
+  const openInvoiceModal = async (saleOrInvoice) => {
+    try {
+      setLoadingInvoice(true);
+      const id = typeof saleOrInvoice === 'object' ? (saleOrInvoice.id_venta || saleOrInvoice.numero_factura) : saleOrInvoice;
+      const fullInvoice = await api.getSaleInvoice(id);
+      setSelectedInvoice(fullInvoice);
+      openModal('invoice-detail');
+    } catch (err) {
+      if (typeof saleOrInvoice === 'object') {
+        setSelectedInvoice(saleOrInvoice);
+        openModal('invoice-detail');
+      } else {
+        showToast('Error al cargar factura: ' + err.message, 'error');
+      }
+    } finally {
+      setLoadingInvoice(false);
+    }
+  };
+
+  const generateInvoiceForSale = async (id_venta) => {
+    try {
+      const res = await api.generateInvoice(id_venta);
+      showToast(res.message || 'Factura generada', 'receipt');
+      const salesData = await api.getSales();
+      setInvoices(salesData);
+      await openInvoiceModal(id_venta);
+    } catch (err) {
+      showToast('Error al generar factura: ' + err.message, 'error');
+    }
+  };
+
+  const searchInvoices = async (filters = {}) => {
+    try {
+      const sales = await api.getSales(filters);
+      setInvoices(sales);
+    } catch (err) {
+      console.error('Error searching invoices:', err);
+    }
+  };
+
+  // ---- Helper: inject current user id into any payload ----
+  const withUser = (data = {}) => ({
+    ...data,
+    id_usuario: currentUser?.id_usuario || 1
+  });
+
+  // Payment Methods (Tabla formas_pago)
+  const addPaymentMethod = async (data) => {
+    try {
+      const newPm = await api.createPaymentMethod(withUser(data));
+      setPaymentMethods(prev => [...prev, newPm]);
+      showToast(`Forma de pago "${newPm.nombre}" registrada`);
+    } catch (err) {
+      showToast('Error al crear forma de pago: ' + err.message, 'error');
+    }
+  };
+
+  const editPaymentMethod = async (id, data) => {
+    try {
+      const updated = await api.updatePaymentMethod(id, withUser(data));
+      setPaymentMethods(prev => prev.map(pm => pm.id_forma_pago === id ? updated : pm));
+      showToast('Forma de pago actualizada');
+    } catch (err) {
+      showToast('Error al actualizar forma de pago: ' + err.message, 'error');
+    }
+  };
+
+  const togglePaymentMethodStatus = async (id, estado) => {
+    try {
+      const updated = await api.togglePaymentMethodStatus(id, estado, withUser());
+      setPaymentMethods(prev => prev.map(pm => pm.id_forma_pago === id ? updated : pm));
+      showToast(`Forma de pago ${estado === 'ACTIVO' ? 'activada' : 'desactivada'}`);
+    } catch (err) {
+      showToast('Error al cambiar estado: ' + err.message, 'error');
     }
   };
 
@@ -403,7 +715,7 @@ export const AppProvider = ({ children }) => {
     }
 
     try {
-      const updated = await api.updateProduct(id_producto, updateData);
+      const updated = await api.updateProduct(id_producto, withUser(updateData));
       setProducts(prev => prev.map(p => p.id_producto === id_producto ? { ...p, ...updated, ...updateData } : p));
       
       // Update cart item price/name if present in cart
@@ -457,7 +769,7 @@ export const AppProvider = ({ children }) => {
     const isCurrentlyActive = (productToDeactivate.estado || 'ACTIVO').toUpperCase() === 'ACTIVO';
     const targetStatus = isCurrentlyActive ? 'INACTIVO' : 'ACTIVO';
     try {
-      await api.toggleProductStatus(productToDeactivate.id_producto, targetStatus);
+      await api.toggleProductStatus(productToDeactivate.id_producto, targetStatus, withUser());
       setProducts(prev => prev.map(p => p.id_producto === productToDeactivate.id_producto ? { ...p, estado: targetStatus } : p));
       showToast(`Producto ${targetStatus === 'ACTIVO' ? 'activado' : 'desactivado'} con éxito`, targetStatus === 'ACTIVO' ? 'check_circle' : 'inventory_2');
     } catch (err) {
@@ -481,7 +793,7 @@ export const AppProvider = ({ children }) => {
   const deleteProductConfirmed = async () => {
     if (!productToDelete) return;
     try {
-      await api.deleteProduct(productToDelete.id_producto);
+      await api.deleteProduct(productToDelete.id_producto, withUser());
       setProducts(prev => prev.filter(p => p.id_producto !== productToDelete.id_producto));
       setCart(prev => prev.filter(item => item.id_producto !== productToDelete.id_producto));
       showToast(`Producto "${productToDelete.nombre}" eliminado`, 'delete');
@@ -508,7 +820,7 @@ export const AppProvider = ({ children }) => {
 
   const saveEditedEmployee = async (id, data) => {
     try {
-      const updated = await api.updateEmployee(id, data);
+      const updated = await api.updateEmployee(id, withUser(data));
       setEmployees(prev => prev.map(e => e.id_empleado === id ? { ...e, ...updated } : e));
       showToast(`Empleado "${data.nombres}" modificado correctamente`, 'check_circle');
       closeModal();
@@ -529,7 +841,7 @@ export const AppProvider = ({ children }) => {
     const isCurrentlyActive = (employeeToDeactivate.estado || 'ACTIVO').toUpperCase() === 'ACTIVO';
     const targetStatus = isCurrentlyActive ? 'INACTIVO' : 'ACTIVO';
     try {
-      await api.toggleEmployeeStatus(employeeToDeactivate.id_empleado, targetStatus);
+      await api.toggleEmployeeStatus(employeeToDeactivate.id_empleado, targetStatus, withUser());
       setEmployees(prev => prev.map(e => e.id_empleado === employeeToDeactivate.id_empleado ? { ...e, estado: targetStatus } : e));
       showToast(`Empleado ${targetStatus === 'ACTIVO' ? 'activado' : 'desactivado'} con éxito`, targetStatus === 'ACTIVO' ? 'check_circle' : 'person_off');
     } catch (err) {
@@ -559,7 +871,7 @@ export const AppProvider = ({ children }) => {
 
   const saveNewClient = async (data) => {
     try {
-      const created = await api.createClient(data);
+      const created = await api.createClient(withUser(data));
       setClients(prev => [...prev, created]);
       showToast(`Cliente "${created.nombres}" registrado correctamente`, 'person_add');
       closeModal();
@@ -579,7 +891,7 @@ export const AppProvider = ({ children }) => {
 
   const saveEditedClient = async (id, data) => {
     try {
-      const updated = await api.updateClient(id, data);
+      const updated = await api.updateClient(id, withUser(data));
       setClients(prev => prev.map(c => c.id_cliente === id ? { ...c, ...updated } : c));
       showToast(`Cliente "${data.nombres}" actualizado correctamente`, 'check_circle');
       closeModal();
@@ -590,12 +902,55 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // Purchase CRUD
+  const createPurchase = async (data) => {
+    try {
+      const newPurchase = await api.createPurchase({
+        ...data,
+        id_usuario: currentUser?.id_usuario || 1,
+      });
+      // Refresh purchases list
+      const updatedPurchases = await api.getPurchases().catch(() => null);
+      if (updatedPurchases && updatedPurchases.length > 0) {
+        setPurchases(updatedPurchases);
+      } else {
+        setPurchases(prev => [newPurchase, ...prev]);
+      }
+      // Refresh products stock
+      api.getProducts().then(prods => { if (Array.isArray(prods) && prods.length > 0) setProducts(prods); }).catch(() => {});
+      showToast('Orden de compra registrada y stock actualizado', 'task_alt');
+      return newPurchase;
+    } catch (err) {
+      // Fallback local
+      const fallbackPurchase = {
+        id_compra: Date.now(),
+        proveedor: providers.find(p => p.id_proveedor === data.id_proveedor)?.nombre || 'Proveedor',
+        fecha_compra: new Date().toISOString(),
+        total: data.total,
+        estado: 'REGISTRADA',
+        observacion: data.observacion || '',
+        usuario: currentUser?.nombre || 'Admin',
+      };
+      setPurchases(prev => [fallbackPurchase, ...prev]);
+      // Update stock locally
+      if (data.items) {
+        setProducts(prev => prev.map(p => {
+          const item = data.items.find(i => i.id_producto === p.id_producto);
+          if (item) return { ...p, stock: (p.stock || 0) + parseInt(item.cantidad) };
+          return p;
+        }));
+      }
+      showToast('Compra registrada (modo local) y stock actualizado', 'task_alt');
+      return fallbackPurchase;
+    }
+  };
+
   const toggleClientStatusConfirmed = async () => {
     if (!clientToDeactivate) return;
     const isCurrentlyActive = (clientToDeactivate.estado || 'ACTIVO').toUpperCase() === 'ACTIVO';
     const targetStatus = isCurrentlyActive ? 'INACTIVO' : 'ACTIVO';
     try {
-      await api.toggleClientStatus(clientToDeactivate.id_cliente, targetStatus);
+      await api.toggleClientStatus(clientToDeactivate.id_cliente, targetStatus, withUser());
       setClients(prev => prev.map(c => c.id_cliente === clientToDeactivate.id_cliente ? { ...c, estado: targetStatus } : c));
       showToast(`Cliente ${targetStatus === 'ACTIVO' ? 'activado' : 'desactivado'} con éxito`, targetStatus === 'ACTIVO' ? 'check_circle' : 'person_off');
     } catch (err) {
@@ -622,8 +977,10 @@ export const AppProvider = ({ children }) => {
     caja,
     providers,
     purchases,
+    setPurchases,
     loading,
     loadData,
+    createPurchase,
 
     // POS
     cart,
@@ -639,8 +996,9 @@ export const AppProvider = ({ children }) => {
     cashReceived,
     setCashReceived,
     discountPct,
-    discountLabel,
+    discountLabel: activeDiscountLabel,
     applyDiscount,
+    setItemDiscount,
     activeCategory,
     setActiveCategory,
     searchQuery,
@@ -651,15 +1009,31 @@ export const AppProvider = ({ children }) => {
     // Calculations
     subtotal,
     discountAmount,
+    itemDiscountsTotal,
+    saleDiscountAmount,
+    activeDiscountLabel,
     tax,
     grandTotal,
     totalUnits,
     vuelto,
+    resolvedPay,
 
     // Actions
     executeCheckout,
     resetNewSale,
     anularFactura,
+    selectedInvoice,
+    loadingInvoice,
+    openInvoiceModal,
+    generateInvoiceForSale,
+    searchInvoices,
+
+    // Payment Methods (Tabla formas_pago)
+    paymentMethods,
+    setPaymentMethods,
+    addPaymentMethod,
+    editPaymentMethod,
+    togglePaymentMethodStatus,
 
     // User & Roles
     currentUser,
@@ -727,6 +1101,8 @@ export const AppProvider = ({ children }) => {
     activeModal,
     openModal,
     closeModal,
+    purchaseInitialProduct,
+    openPurchaseModal,
     completedSaleData,
     toast,
     showToast,

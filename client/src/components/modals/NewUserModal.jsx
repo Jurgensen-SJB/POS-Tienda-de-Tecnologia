@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { api } from '../../api/api';
 
 export const NewUserModal = () => {
-  const { activeModal, closeModal, setEmployees, showToast } = useApp();
+  const { activeModal, closeModal, setEmployees, showToast, currentUser } = useApp();
 
   const [tipoDoc, setTipoDoc] = useState('DNI');
   const [numDoc, setNumDoc] = useState('');
@@ -43,7 +43,8 @@ export const NewUserModal = () => {
       cargo: cargo.trim() || role,
       rol: role,
       nombre_usuario: username.trim() || `${nombres.trim().toLowerCase().split(' ')[0]}.${numDoc.trim().slice(-3)}`,
-      password: password || '123456'
+      password: password || '123456',
+      id_usuario: currentUser?.id_usuario || 1
     };
 
     try {

@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { api } from '../../api/api';
 
 export const ClientModal = () => {
-  const { activeModal, closeModal, clients, setClients, assignClient, showToast } = useApp();
+  const { activeModal, closeModal, clients, setClients, assignClient, showToast, currentUser } = useApp();
 
   const [newName, setNewName] = useState('');
   const [newDoc, setNewDoc] = useState('');
@@ -20,6 +20,7 @@ export const ClientModal = () => {
         numero_identificacion: newDoc.trim(),
         nombres: newName.trim(),
         apellidos: '',
+        id_usuario: currentUser?.id_usuario || 1,
       });
 
       setClients(prev => [...prev, created]);

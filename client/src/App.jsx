@@ -18,6 +18,7 @@ import { ProveedoresView } from './components/views/ProveedoresView';
 import { ClientesView } from './components/views/ClientesView';
 import { EmpleadosView } from './components/views/EmpleadosView';
 import { AuditoriaView } from './components/views/AuditoriaView';
+import { EstadisticasView } from './components/views/EstadisticasView';
 import { AccessRestrictedView } from './components/views/AccessRestrictedView';
 
 // Modals
@@ -41,6 +42,11 @@ import { NewClientModal } from './components/modals/NewClientModal';
 import { ClientDetailModal } from './components/modals/ClientDetailModal';
 import { EditClientModal } from './components/modals/EditClientModal';
 import { DeactivateClientModal } from './components/modals/DeactivateClientModal';
+import { InvoiceDetailModal } from './components/modals/InvoiceDetailModal';
+import { PaymentMethodsModal } from './components/modals/PaymentMethodsModal';
+import { CorteXModal } from './components/modals/CorteXModal';
+import { CierreZModal } from './components/modals/CierreZModal';
+import { NewPurchaseModal } from './components/modals/NewPurchaseModal';
 
 export function AppContent() {
   const { currentView, currentUser, hasPermiso } = useApp();
@@ -69,6 +75,7 @@ export function AppContent() {
     clientes:    { perm: 'ver_clientes',    name: 'Clientes' },
     empleados:   { perm: 'ver_empleados',   name: 'Empleados & Permisos' },
     auditoria:   { perm: 'ver_auditoria',   name: 'Auditoría del Sistema' },
+    estadisticas:{ perm: 'ver_auditoria',   name: 'Estadísticas & BI' },
   };
 
   const renderView = () => {
@@ -90,13 +97,15 @@ export function AppContent() {
       case 'proveedores':
         return <ProveedoresView />;
       case 'compras':
-        return <ProveedoresView />;
+        return <ComprasView />;
       case 'clientes':
         return <ClientesView />;
       case 'empleados':
         return <EmpleadosView />;
       case 'auditoria':
         return <AuditoriaView />;
+      case 'estadisticas':
+        return <EstadisticasView />;
       default:
         return <PosView />;
     }
@@ -142,6 +151,11 @@ export function AppContent() {
       <ClientDetailModal />
       <EditClientModal />
       <DeactivateClientModal />
+      <InvoiceDetailModal />
+      <PaymentMethodsModal />
+      <CorteXModal />
+      <CierreZModal />
+      <NewPurchaseModal />
     </div>
   );
 }

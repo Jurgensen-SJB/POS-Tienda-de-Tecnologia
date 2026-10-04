@@ -11,20 +11,25 @@ export const LoginView = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isInactiveError, setIsInactiveError] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!identifier.trim() || !password) {
       setErrorMessage('Por favor ingresa tu usuario/correo y contraseña');
+      setIsInactiveError(false);
       return;
     }
 
     setErrorMessage('');
+    setIsInactiveError(false);
     setIsLoading(true);
     const res = await login(identifier.trim(), password);
     setIsLoading(false);
 
     if (!res.success) {
+      const inactive = res.error?.includes('inactiva') || res.error?.includes('desactivado') || res.error?.includes('INACTIVO');
+      setIsInactiveError(inactive);
       setErrorMessage(res.error || 'Credenciales inválidas');
     }
   };
@@ -52,10 +57,24 @@ export const LoginView = () => {
         {/* Login Form */}
         <form className="p-6 space-y-4 text-xs" onSubmit={handleSubmit}>
           {errorMessage && (
-            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl flex items-center gap-2 text-xs font-semibold">
-              <span className="material-symbols-outlined text-base text-rose-600">error</span>
-              <span>{errorMessage}</span>
-            </div>
+            isInactiveError ? (
+              /* Banner especial para usuario inactivo */
+              <div className="p-3.5 bg-amber-50 border border-amber-300 text-amber-900 rounded-xl text-xs font-semibold space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-amber-600 text-lg shrink-0">block</span>
+                  <span className="font-bold text-amber-800">Cuenta de Usuario Inactiva</span>
+                </div>
+                <p className="text-amber-700 font-normal text-[11px] leading-snug pl-7">
+                  Tu cuenta ha sido <strong>desactivada por el administrador</strong> y no puede iniciar sesión en el sistema. Contacta a tu supervisor para reactivarla.
+                </p>
+              </div>
+            ) : (
+              /* Banner estándar para credenciales incorrectas */
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl flex items-center gap-2 text-xs font-semibold">
+                <span className="material-symbols-outlined text-base text-rose-600">error</span>
+                <span>{errorMessage}</span>
+              </div>
+            )
           )}
 
           <div>

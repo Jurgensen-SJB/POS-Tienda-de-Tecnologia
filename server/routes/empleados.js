@@ -105,7 +105,8 @@ router.post('/', async (req, res) => {
     cargo = 'Cajero',
     rol = 'Cajero',
     nombre_usuario,
-    password
+    password,
+    id_usuario = 1
   } = req.body;
 
   if (!numero_identificacion || !nombres || !apellidos) {
@@ -135,6 +136,16 @@ router.post('/', async (req, res) => {
       await client.query('COMMIT');
       newEmp.rol = rol;
       newEmp.nombre_usuario = nombre_usuario || '';
+
+      await registrarOperacion({
+        id_usuario,
+        operacion: 'CREAR',
+        tabla_afectada: 'empleados',
+        id_registro_afectado: newEmp.id_empleado,
+        descripcion: `Registro de colaborador: ${newEmp.nombres} ${newEmp.apellidos} (${newEmp.cargo})`,
+        datos_nuevos: newEmp
+      });
+
       return res.status(201).json(newEmp);
     } catch (err) {
       await client.query('ROLLBACK').catch(() => {});
@@ -176,7 +187,8 @@ router.put('/:id', async (req, res) => {
     correo,
     cargo,
     rol,
-    estado
+    estado,
+    id_usuario = 1
   } = req.body;
 
   if (!nombres || !apellidos) {
@@ -221,6 +233,7 @@ router.put('/:id', async (req, res) => {
       await client.query('COMMIT');
       updatedEmp.rol = rol || updatedEmp.cargo;
       await registrarOperacion({
+        id_usuario,
         operacion: 'MODIFICAR',
         tabla_afectada: 'empleados',
         id_registro_afectado: parseInt(id),
@@ -254,6 +267,7 @@ router.put('/:id', async (req, res) => {
   };
 
   await registrarOperacion({
+    id_usuario,
     operacion: 'MODIFICAR',
     tabla_afectada: 'empleados',
     id_registro_afectado: parseInt(id),
@@ -268,7 +282,7 @@ router.put('/:id', async (req, res) => {
 // PATCH /api/empleados/:id/estado
 router.patch('/:id/estado', async (req, res) => {
   const { id } = req.params;
-  const { estado } = req.body;
+  const { estado, id_usuario = 1 } = req.body;
 
   if (!estado || !['ACTIVO', 'INACTIVO'].includes(estado.toUpperCase())) {
     return res.status(400).json({ error: 'Estado debe ser ACTIVO o INACTIVO' });
@@ -298,6 +312,7 @@ router.patch('/:id/estado', async (req, res) => {
 
       await client.query('COMMIT');
       await registrarOperacion({
+        id_usuario,
         operacion: targetEstado === 'ACTIVO' ? 'MODIFICAR' : 'DESACTIVAR',
         tabla_afectada: 'empleados',
         id_registro_afectado: parseInt(id),
@@ -318,6 +333,7 @@ router.patch('/:id/estado', async (req, res) => {
   if (!emp) return res.status(404).json({ error: 'Empleado no encontrado' });
   emp.estado = targetEstado;
   await registrarOperacion({
+    id_usuario,
     operacion: targetEstado === 'ACTIVO' ? 'MODIFICAR' : 'DESACTIVAR',
     tabla_afectada: 'empleados',
     id_registro_afectado: parseInt(id),
@@ -325,6 +341,134 @@ router.patch('/:id/estado', async (req, res) => {
     datos_nuevos: { estado: targetEstado }
   });
   res.json({ success: true, message: `Empleado ${targetEstado.toLowerCase()} correctamente`, empleado: emp });
+});
+
+// 6a. CONSULTAR CREDENCIALES DE UN EMPLEADO (solo Admin)
+// GET /api/empleados/:id/credenciales
+router.get('/:id/credenciales', async (req, res) => {
+  const { id } = req.params;
+
+  // Helper: detectar si es hash bcrypt (no es contrasena en texto plano)
+  const isHash = (str) => str && (str.startsWith('$2b$') || str.startsWith('$2a$') || str.startsWith('$2y$') || str.includes('placeholder'));
+
+  // Buscar contrasena en texto plano desde el fallback (para cuando la BD guarda hash)
+  const getPlainFromFallback = (empId) => {
+    const emp = employees.find(e => e.id_empleado === parseInt(empId));
+    return emp?.password || '';
+  };
+
+  try {
+    const result = await pool.query(
+      `SELECT u.nombre_usuario, u.password_hash AS password, u.estado
+       FROM usuarios u
+       WHERE u.id_empleado = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ nombre_usuario: '', password: '', estado: 'SIN_USUARIO' });
+    }
+
+    const u = result.rows[0];
+    // Si el campo es un hash bcrypt, devolver la contrasena del fallback (texto plano)
+    const password = isHash(u.password) ? getPlainFromFallback(id) : (u.password || '');
+
+    return res.json({
+      nombre_usuario: u.nombre_usuario || '',
+      password,
+      estado: u.estado || 'ACTIVO',
+      es_hash: isHash(u.password) // indicar si se esta usando fallback
+    });
+  } catch (err) {
+    // Fallback en memoria cuando la BD no esta disponible
+    const emp = employees.find(e => e.id_empleado === parseInt(id));
+    if (!emp) return res.status(404).json({ error: 'Empleado no encontrado' });
+    return res.json({
+      nombre_usuario: emp.nombre_usuario || '',
+      password: emp.password || '',
+      estado: emp.estado || 'ACTIVO'
+    });
+  }
+});
+
+// 6b. ACTUALIZAR CREDENCIALES DE ACCESO (solo Admin)
+// PATCH /api/empleados/:id/credenciales
+router.patch('/:id/credenciales', async (req, res) => {
+  const { id } = req.params;
+  const { nombre_usuario, password, nueva_password, id_usuario = 1 } = req.body;
+
+  if (!nombre_usuario) {
+    return res.status(400).json({ error: 'El nombre de usuario es obligatorio' });
+  }
+
+  const client = await pool.connect().catch(() => null);
+  if (client) {
+    try {
+      await client.query('BEGIN');
+
+      // Verificar si ya tiene usuario asociado
+      const checkRes = await client.query(
+        'SELECT id_usuario, nombre_usuario FROM usuarios WHERE id_empleado = $1',
+        [id]
+      );
+
+      if (checkRes.rows.length > 0) {
+        // Actualizar credenciales existentes
+        if (nueva_password) {
+          await client.query(
+            'UPDATE usuarios SET nombre_usuario = $1, password_hash = $2 WHERE id_empleado = $3',
+            [nombre_usuario.trim().toLowerCase(), nueva_password, id]
+          );
+        } else {
+          await client.query(
+            'UPDATE usuarios SET nombre_usuario = $1 WHERE id_empleado = $2',
+            [nombre_usuario.trim().toLowerCase(), id]
+          );
+        }
+      } else {
+        // Crear nuevo usuario para el empleado
+        const empRes = await client.query(
+          'SELECT id_empleado FROM empleados WHERE id_empleado = $1',
+          [id]
+        );
+        if (empRes.rows.length === 0) {
+          await client.query('ROLLBACK');
+          return res.status(404).json({ error: 'Empleado no encontrado' });
+        }
+        await client.query(
+          `INSERT INTO usuarios (id_empleado, id_rol, nombre_usuario, password_hash, estado)
+           VALUES ($1, 3, $2, $3, 'ACTIVO')`,
+          [id, nombre_usuario.trim().toLowerCase(), nueva_password || password || 'temporal123']
+        );
+      }
+
+      await client.query('COMMIT');
+
+      await registrarOperacion({
+        id_usuario,
+        operacion: 'MODIFICAR',
+        tabla_afectada: 'usuarios',
+        id_registro_afectado: parseInt(id),
+        descripcion: `Actualización de credenciales de acceso para empleado #${id}`,
+        datos_nuevos: { nombre_usuario, password_updated: Boolean(nueva_password) }
+      });
+
+      return res.json({ success: true, message: 'Credenciales actualizadas correctamente' });
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      console.error('DB error updating credentials:', err.message);
+      return res.status(500).json({ error: 'Error al actualizar credenciales: ' + err.message });
+    } finally {
+      client.release();
+    }
+  }
+
+  // Fallback in-memory: actualizar en systemAccounts del auth (simulado)
+  const emp = employees.find(e => e.id_empleado === parseInt(id));
+  if (!emp) return res.status(404).json({ error: 'Empleado no encontrado' });
+  emp.nombre_usuario = nombre_usuario.trim().toLowerCase();
+  if (nueva_password) emp.password = nueva_password;
+  return res.json({ success: true, message: 'Credenciales actualizadas (modo local)' });
 });
 
 // DELETE /api/empleados/:id (soft-delete / desactivar)

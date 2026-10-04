@@ -68,7 +68,7 @@ router.get('/:id', async (req, res) => {
 
 // 3. POST /api/categorias - Registrar categoría
 router.post('/', async (req, res) => {
-  const { nombre, descripcion } = req.body;
+  const { nombre, descripcion, id_usuario = 1 } = req.body;
   if (!nombre || !nombre.trim()) {
     return res.status(400).json({ error: 'El nombre de la categoría es requerido' });
   }
@@ -81,6 +81,7 @@ router.post('/', async (req, res) => {
     const newCat = result.rows[0];
 
     await registrarOperacion({
+      id_usuario,
       operacion: 'CREAR',
       tabla_afectada: 'categorias',
       id_registro_afectado: newCat.id_categoria,
@@ -105,7 +106,7 @@ router.post('/', async (req, res) => {
 // 4. PUT /api/categorias/:id - Modificar categoría
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { nombre, descripcion } = req.body;
+  const { nombre, descripcion, id_usuario = 1 } = req.body;
 
   if (!nombre || !nombre.trim()) {
     return res.status(400).json({ error: 'El nombre de la categoría es requerido' });
@@ -124,6 +125,7 @@ router.put('/:id', async (req, res) => {
     const updated = result.rows[0];
 
     await registrarOperacion({
+      id_usuario,
       operacion: 'MODIFICAR',
       tabla_afectada: 'categorias',
       id_registro_afectado: parseInt(id),
@@ -144,7 +146,7 @@ router.put('/:id', async (req, res) => {
 // 5. PATCH /api/categorias/:id/estado - Desactivar / Activar categoría
 router.patch('/:id/estado', async (req, res) => {
   const { id } = req.params;
-  const { estado } = req.body;
+  const { estado, id_usuario = 1 } = req.body;
   const nuevoEstado = estado ? estado.toUpperCase() : null;
 
   if (!nuevoEstado || !['ACTIVO', 'INACTIVO'].includes(nuevoEstado)) {
@@ -161,6 +163,7 @@ router.patch('/:id/estado', async (req, res) => {
     const updated = result.rows[0];
 
     await registrarOperacion({
+      id_usuario,
       operacion: nuevoEstado === 'INACTIVO' ? 'DESACTIVAR' : 'ACTIVAR',
       tabla_afectada: 'categorias',
       id_registro_afectado: parseInt(id),

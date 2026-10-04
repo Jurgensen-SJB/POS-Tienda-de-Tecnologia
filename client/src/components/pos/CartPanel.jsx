@@ -6,7 +6,7 @@ export const CartPanel = () => {
   const { cart, totalUnits, openModal } = useApp();
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-xs flex-1 flex flex-col overflow-hidden min-h-[140px]">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-xs flex-1 flex flex-col overflow-hidden min-h-[85px]">
       {/* Header */}
       <div className="px-3 py-1 bg-slate-50 border-b border-slate-200 flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
         <span className="flex-1">PRODUCTO</span>

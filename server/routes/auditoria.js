@@ -55,11 +55,35 @@ const fallbackLogs = [
   }
 ];
 
+// Helper: resolve username and role from DB given id_usuario
+async function resolveUserAudit(id_usuario) {
+  try {
+    const res = await pool.query(
+      `SELECT 
+         u.nombre_usuario, 
+         COALESCE(NULLIF(TRIM(e.nombres || ' ' || e.apellidos), ''), u.nombre_usuario) AS nombre_completo, 
+         COALESCE(r.nombre, 'Usuario') AS rol
+       FROM usuarios u
+       LEFT JOIN empleados e ON u.id_empleado = e.id_empleado
+       LEFT JOIN roles r ON u.id_rol = r.id_rol
+       WHERE u.id_usuario = $1`,
+      [id_usuario]
+    );
+    if (res.rows.length > 0) {
+      return {
+        usuario: res.rows[0].nombre_completo || res.rows[0].nombre_usuario || 'usuario',
+        rol: res.rows[0].rol || 'Usuario'
+      };
+    }
+  } catch (_) {}
+  return { usuario: 'usuario', rol: 'Usuario' };
+}
+
 // Helper to record an operation
 async function registrarOperacion({
   id_usuario = 1,
-  usuario = 'admin',
-  rol = 'Administrador',
+  usuario = null,
+  rol = null,
   operacion = 'CREAR',
   tabla_afectada,
   id_registro_afectado = 0,
@@ -68,6 +92,13 @@ async function registrarOperacion({
   datos_nuevos = null
 }) {
   const timestamp = new Date().toISOString();
+
+  // Auto-resolve username/rol from DB when not explicitly provided
+  if (!usuario || !rol || usuario === 'admin' || usuario === 'usuario') {
+    const resolved = await resolveUserAudit(id_usuario);
+    usuario = resolved.usuario;
+    rol = resolved.rol;
+  }
 
   // 1. Try writing to PostgreSQL
   try {
@@ -113,8 +144,8 @@ router.get('/', async (req, res) => {
       SELECT 
         r.id_registro,
         r.id_usuario,
-        u.nombre_usuario AS usuario,
-        rol.nombre AS rol,
+        COALESCE(NULLIF(TRIM(e.nombres || ' ' || e.apellidos), ''), u.nombre_usuario, 'Usuario') AS usuario,
+        COALESCE(rol.nombre, 'Usuario') AS rol,
         r.operacion,
         r.tabla_afectada,
         r.id_registro_afectado,
@@ -123,6 +154,7 @@ router.get('/', async (req, res) => {
         r.datos_nuevos
       FROM registro_operaciones r
       LEFT JOIN usuarios u ON r.id_usuario = u.id_usuario
+      LEFT JOIN empleados e ON u.id_empleado = e.id_empleado
       LEFT JOIN roles rol ON u.id_rol = rol.id_rol
       ORDER BY r.fecha_hora DESC
       LIMIT 100

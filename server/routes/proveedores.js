@@ -56,7 +56,7 @@ router.get('/:id', async (req, res) => {
 
 // 3. POST /api/proveedores - Registrar proveedor
 router.post('/', async (req, res) => {
-  const { nombre, identificacion, telefono, correo, direccion } = req.body;
+  const { nombre, identificacion, telefono, correo, direccion, id_usuario = 1 } = req.body;
   if (!nombre) return res.status(400).json({ error: 'El nombre del proveedor es requerido' });
 
   try {
@@ -68,6 +68,7 @@ router.post('/', async (req, res) => {
     const newProv = result.rows[0];
 
     await registrarOperacion({
+      id_usuario,
       operacion: 'CREAR',
       tabla_afectada: 'proveedores',
       id_registro_afectado: newProv.id_proveedor,
@@ -90,7 +91,7 @@ router.post('/', async (req, res) => {
 // 4. PUT /api/proveedores/:id - Modificar proveedor
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { nombre, identificacion, telefono, correo, direccion } = req.body;
+  const { nombre, identificacion, telefono, correo, direccion, id_usuario = 1 } = req.body;
 
   try {
     const result = await pool.query(
@@ -116,6 +117,7 @@ router.put('/:id', async (req, res) => {
     const updated = result.rows[0];
 
     await registrarOperacion({
+      id_usuario,
       operacion: 'MODIFICAR',
       tabla_afectada: 'proveedores',
       id_registro_afectado: parseInt(id),
@@ -139,7 +141,7 @@ router.put('/:id', async (req, res) => {
 // 5. PATCH /api/proveedores/:id/estado - Activar/Desactivar
 router.patch('/:id/estado', async (req, res) => {
   const { id } = req.params;
-  const { estado } = req.body;
+  const { estado, id_usuario = 1 } = req.body;
   const nuevoEstado = estado ? estado.toUpperCase() : null;
 
   if (!nuevoEstado || !['ACTIVO', 'INACTIVO'].includes(nuevoEstado)) {
@@ -155,6 +157,7 @@ router.patch('/:id/estado', async (req, res) => {
     const updated = result.rows[0];
 
     await registrarOperacion({
+      id_usuario,
       operacion: nuevoEstado === 'INACTIVO' ? 'DESACTIVAR' : 'ACTIVAR',
       tabla_afectada: 'proveedores',
       id_registro_afectado: parseInt(id),

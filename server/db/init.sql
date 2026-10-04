@@ -19,7 +19,24 @@ CREATE TABLE IF NOT EXISTS categorias (
 );
 
 -- =====================================================
--- 2. TABLA: PRODUCTOS
+-- 2. TABLA: PROVEEDORES
+-- =====================================================
+CREATE TABLE IF NOT EXISTS proveedores (
+    id_proveedor SERIAL PRIMARY KEY,
+    nombre VARCHAR(150) NOT NULL,
+    identificacion VARCHAR(50),
+    telefono VARCHAR(30),
+    correo VARCHAR(150),
+    direccion VARCHAR(200),
+    estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO'
+        CHECK (estado IN ('ACTIVO', 'INACTIVO')),
+    fecha_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_proveedor_identificacion UNIQUE (identificacion)
+);
+
+-- =====================================================
+-- 3. TABLA: PRODUCTOS
 -- =====================================================
 CREATE TABLE IF NOT EXISTS productos (
     id_producto SERIAL PRIMARY KEY,
@@ -29,6 +46,7 @@ CREATE TABLE IF NOT EXISTS productos (
     precio_venta DECIMAL(12,2) NOT NULL,
     stock_minimo INT NOT NULL DEFAULT 0,
     id_categoria INT NOT NULL,
+    id_proveedor INT NULL,
     imagen_url TEXT,
     estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO'
         CHECK (estado IN ('ACTIVO', 'INACTIVO')),
@@ -41,11 +59,16 @@ CREATE TABLE IF NOT EXISTS productos (
         FOREIGN KEY (id_categoria)
         REFERENCES categorias(id_categoria)
         ON UPDATE CASCADE
-        ON DELETE RESTRICT
+        ON DELETE RESTRICT,
+    CONSTRAINT fk_producto_proveedor
+        FOREIGN KEY (id_proveedor)
+        REFERENCES proveedores(id_proveedor)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL
 );
 
 -- =====================================================
--- 3. TABLA: CLIENTES
+-- 4. TABLA: CLIENTES
 -- =====================================================
 CREATE TABLE IF NOT EXISTS clientes (
     id_cliente SERIAL PRIMARY KEY,
@@ -61,23 +84,6 @@ CREATE TABLE IF NOT EXISTS clientes (
     fecha_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_cliente_identificacion UNIQUE (numero_identificacion)
-);
-
--- =====================================================
--- 4. TABLA: PROVEEDORES
--- =====================================================
-CREATE TABLE IF NOT EXISTS proveedores (
-    id_proveedor SERIAL PRIMARY KEY,
-    nombre VARCHAR(150) NOT NULL,
-    identificacion VARCHAR(50),
-    telefono VARCHAR(30),
-    correo VARCHAR(150),
-    direccion VARCHAR(200),
-    estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO'
-        CHECK (estado IN ('ACTIVO', 'INACTIVO')),
-    fecha_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    fecha_actualizacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_proveedor_identificacion UNIQUE (identificacion)
 );
 
 -- =====================================================

@@ -57,8 +57,9 @@ export const ProductDetailModal = () => {
           {/* Top Card: Image + Title */}
           <div className="flex gap-4 p-3.5 bg-slate-50 border border-slate-200 rounded-xl items-center">
             <img
-              src={productDetail.imagen_url || 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=360&auto=format&fit=crop&q=80'}
+              src={productDetail.imagen_url || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=360&auto=format&fit=crop&q=80'}
               alt={productDetail.nombre}
+              onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=360&auto=format&fit=crop&q=80'; }}
               className="w-20 h-20 rounded-xl object-cover border border-slate-200 shrink-0 bg-white"
             />
             <div className="min-w-0 flex-1 space-y-1">
@@ -75,9 +76,15 @@ export const ProductDetailModal = () => {
               <h4 className="font-bold text-slate-900 text-sm truncate" title={productDetail.nombre}>
                 {productDetail.nombre}
               </h4>
-              <p className="font-mono text-[11px] text-slate-500">
-                Código: <span className="font-bold text-slate-700">{productDetail.codigo}</span>
-              </p>
+              <div className="flex items-center gap-3 text-[11px] text-slate-500 font-mono flex-wrap">
+                <p>Código: <span className="font-bold text-slate-700">{productDetail.codigo}</span></p>
+                {productDetail.proveedor_nombre && (
+                  <p className="flex items-center gap-1 text-slate-700 font-sans font-medium">
+                    <span className="material-symbols-outlined text-xs text-blue-600">local_shipping</span>
+                    <span>{productDetail.proveedor_nombre}</span>
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 

@@ -33,3 +33,57 @@
     grid-template-rows: repeat(6, minmax(0, 1fr));
   }
 }
+
+/* ── Estilos de Impresión Térmica Fiscal (80mm) ── */
+@media print {
+  @page {
+    margin: 0;
+    size: auto;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Ocultar interfaz del sistema, barra lateral, encabezados y botones */
+  aside,
+  header,
+  nav,
+  .no-print,
+  button,
+  #view-pos,
+  #view-caja,
+  #view-stock {
+    display: none !important;
+  }
+
+  /* Mostrar únicamente el contenedor del comprobante fiscal */
+  .printable-receipt {
+    display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    margin: 0 auto !important;
+    width: 78mm !important;
+    max-width: 78mm !important;
+    padding: 6mm !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: 'Courier New', Courier, monospace !important;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .printable-receipt * {
+    visibility: visible !important;
+    color: #000000 !important;
+  }
+}

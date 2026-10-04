@@ -71,7 +71,8 @@ router.post('/', async (req, res) => {
     telefono,
     correo,
     direccion,
-    estado = 'ACTIVO'
+    estado = 'ACTIVO',
+    id_usuario = 1
   } = req.body;
 
   if (!tipo_identificacion || !numero_identificacion || !nombres) {
@@ -98,6 +99,7 @@ router.post('/', async (req, res) => {
 
     // Audit log
     await registrarOperacion({
+      id_usuario,
       operacion: 'CREAR',
       tabla_afectada: 'clientes',
       id_registro_afectado: newClient.id_cliente,
@@ -123,6 +125,7 @@ router.post('/', async (req, res) => {
 
     // Audit log
     await registrarOperacion({
+      id_usuario,
       operacion: 'CREAR',
       tabla_afectada: 'clientes',
       id_registro_afectado: newClient.id_cliente,
@@ -145,7 +148,8 @@ router.put('/:id', async (req, res) => {
     telefono,
     correo,
     direccion,
-    estado
+    estado,
+    id_usuario = 1
   } = req.body;
 
   if (!nombres) {
@@ -187,6 +191,7 @@ router.put('/:id', async (req, res) => {
 
     // Audit log
     await registrarOperacion({
+      id_usuario,
       operacion: 'MODIFICAR',
       tabla_afectada: 'clientes',
       id_registro_afectado: parseInt(id),
@@ -214,6 +219,7 @@ router.put('/:id', async (req, res) => {
 
     // Audit log
     await registrarOperacion({
+      id_usuario,
       operacion: 'MODIFICAR',
       tabla_afectada: 'clientes',
       id_registro_afectado: parseInt(id),
@@ -229,7 +235,7 @@ router.put('/:id', async (req, res) => {
 // 5. PATCH /api/clientes/:id/estado - Desactivar / Activar cliente
 router.patch('/:id/estado', async (req, res) => {
   const { id } = req.params;
-  const { estado } = req.body;
+  const { estado, id_usuario = 1 } = req.body;
 
   if (!estado || !['ACTIVO', 'INACTIVO'].includes(estado.toUpperCase())) {
     return res.status(400).json({ error: 'Estado debe ser ACTIVO o INACTIVO' });
@@ -251,6 +257,7 @@ router.patch('/:id/estado', async (req, res) => {
 
     // Audit log
     await registrarOperacion({
+      id_usuario,
       operacion: targetEstado === 'ACTIVO' ? 'MODIFICAR' : 'DESACTIVAR',
       tabla_afectada: 'clientes',
       id_registro_afectado: parseInt(id),
@@ -271,6 +278,7 @@ router.patch('/:id/estado', async (req, res) => {
 
     // Audit log
     await registrarOperacion({
+      id_usuario,
       operacion: targetEstado === 'ACTIVO' ? 'MODIFICAR' : 'DESACTIVAR',
       tabla_afectada: 'clientes',
       id_registro_afectado: parseInt(id),

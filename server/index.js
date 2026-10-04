@@ -10,9 +10,16 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Request logger
+const path = require('path');
+app.use('/public', express.static(path.join(__dirname, '../client/src/assets')));
+
+// Request logger & user context
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  const headerUserId = req.headers['x-user-id'];
+  if (headerUserId && req.body && typeof req.body === 'object' && !req.body.id_usuario) {
+    req.body.id_usuario = parseInt(headerUserId);
+  }
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}${headerUserId ? ` (User #${headerUserId})` : ''}`);
   next();
 });
 
@@ -26,8 +33,15 @@ app.use('/api/ventas', require('./routes/ventas'));
 app.use('/api/cajas', require('./routes/cajas'));
 app.use('/api/proveedores', require('./routes/proveedores'));
 app.use('/api/compras', require('./routes/compras'));
+app.use('/api/formas-pago', require('./routes/formas_pago'));
 app.use('/api/permisos', require('./routes/permisos'));
+app.use('/api/inventario', require('./routes/inventario'));
 app.use('/api/auditoria', require('./routes/auditoria').router);
+
+// QR Payment page & session API
+const qrPayRouter = require('./routes/qr_pay');
+app.use('/pay', qrPayRouter);          // GET /pay?ref=...&amount=... → HTML page
+app.use('/api/qr-pay', qrPayRouter);   // POST /api/qr-pay/session, GET /api/qr-pay/status/:ref
 
 // Health check
 app.get('/api/health', (req, res) => {

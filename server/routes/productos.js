@@ -18,12 +18,15 @@ router.get('/', async (req, res) => {
         p.precio_venta,
         p.stock_minimo,
         p.id_categoria,
+        p.id_proveedor,
         p.imagen_url,
         p.estado,
         c.nombre AS categoria_nombre,
+        pr.nombre AS proveedor_nombre,
         COALESCE(i.cantidad_actual, 0) AS stock
       FROM productos p
       LEFT JOIN categorias c ON p.id_categoria = c.id_categoria
+      LEFT JOIN proveedores pr ON p.id_proveedor = pr.id_proveedor
       LEFT JOIN inventario i ON p.id_producto = i.id_producto
       WHERE 1=1
     `;
@@ -97,7 +100,9 @@ router.post('/', async (req, res) => {
     imagen_url,
     stock_inicial,
     costo,
-    estado = 'ACTIVO'
+    id_proveedor,
+    estado = 'ACTIVO',
+    id_usuario = 1
   } = req.body;
   
   if (!codigo || !nombre || !precio_venta || !id_categoria) {
@@ -109,8 +114,8 @@ router.post('/', async (req, res) => {
     try {
       await client.query('BEGIN');
       const prodRes = await client.query(
-        `INSERT INTO productos (codigo, nombre, descripcion, precio_venta, stock_minimo, id_categoria, imagen_url, estado)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        `INSERT INTO productos (codigo, nombre, descripcion, precio_venta, stock_minimo, id_categoria, id_proveedor, imagen_url, estado)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
         [
           codigo.trim(),
           nombre.trim(),
@@ -118,6 +123,7 @@ router.post('/', async (req, res) => {
           parseFloat(precio_venta),
           parseInt(stock_minimo || 5),
           parseInt(id_categoria),
+          id_proveedor ? parseInt(id_proveedor) : 1,
           imagen_url || '',
           estado.toUpperCase()
         ]
@@ -135,6 +141,7 @@ router.post('/', async (req, res) => {
 
       // Audit log
       await registrarOperacion({
+        id_usuario,
         operacion: 'CREAR',
         tabla_afectada: 'productos',
         id_registro_afectado: newProduct.id_producto,
@@ -172,6 +179,7 @@ router.post('/', async (req, res) => {
 
   // Audit log
   await registrarOperacion({
+    id_usuario,
     operacion: 'CREAR',
     tabla_afectada: 'productos',
     id_registro_afectado: newProduct.id_producto,
@@ -185,7 +193,7 @@ router.post('/', async (req, res) => {
 // 4. PUT /api/productos/:id - Modificar producto
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { nombre, precio_venta, id_categoria, stock_minimo, imagen_url, stock, descripcion, costo, estado } = req.body;
+  const { nombre, precio_venta, id_categoria, id_proveedor, stock_minimo, imagen_url, stock, descripcion, costo, estado, id_usuario = 1 } = req.body;
 
   try {
     await pool.query(
@@ -197,8 +205,9 @@ router.put('/:id', async (req, res) => {
            imagen_url = COALESCE($5, imagen_url),
            descripcion = COALESCE($6, descripcion),
            estado = COALESCE($7, estado),
+           id_proveedor = COALESCE($8, id_proveedor),
            fecha_actualizacion = CURRENT_TIMESTAMP
-       WHERE id_producto = $8`,
+       WHERE id_producto = $9`,
       [
         nombre ? nombre.trim() : null,
         precio_venta !== undefined && precio_venta !== null ? parseFloat(precio_venta) : null,
@@ -207,6 +216,7 @@ router.put('/:id', async (req, res) => {
         imagen_url !== undefined ? imagen_url : null,
         descripcion !== undefined ? descripcion : null,
         estado ? estado.toUpperCase() : null,
+        id_proveedor ? parseInt(id_proveedor) : null,
         parseInt(id)
       ]
     );
@@ -219,9 +229,10 @@ router.put('/:id', async (req, res) => {
     }
 
     const updated = await pool.query(
-      `SELECT p.*, c.nombre AS categoria_nombre, COALESCE(i.cantidad_actual, 0) AS stock
+      `SELECT p.*, c.nombre AS categoria_nombre, pr.nombre AS proveedor_nombre, COALESCE(i.cantidad_actual, 0) AS stock
        FROM productos p
        LEFT JOIN categorias c ON p.id_categoria = c.id_categoria
+       LEFT JOIN proveedores pr ON p.id_proveedor = pr.id_proveedor
        LEFT JOIN inventario i ON p.id_producto = i.id_producto
        WHERE p.id_producto = $1`,
       [id]
@@ -231,6 +242,7 @@ router.put('/:id', async (req, res) => {
 
     // Audit log
     await registrarOperacion({
+      id_usuario,
       operacion: 'MODIFICAR',
       tabla_afectada: 'productos',
       id_registro_afectado: parseInt(id),
@@ -259,6 +271,7 @@ router.put('/:id', async (req, res) => {
 
       // Audit log
       await registrarOperacion({
+        id_usuario,
         operacion: 'MODIFICAR',
         tabla_afectada: 'productos',
         id_registro_afectado: parseInt(id),
@@ -276,7 +289,7 @@ router.put('/:id', async (req, res) => {
 // 5. PATCH /api/productos/:id/estado - Desactivar / Activar producto
 router.patch('/:id/estado', async (req, res) => {
   const { id } = req.params;
-  const { estado } = req.body;
+  const { estado, id_usuario = 1 } = req.body;
 
   if (!estado || !['ACTIVO', 'INACTIVO'].includes(estado.toUpperCase())) {
     return res.status(400).json({ error: 'Estado debe ser ACTIVO o INACTIVO' });
@@ -298,6 +311,7 @@ router.patch('/:id/estado', async (req, res) => {
 
     // Audit log
     await registrarOperacion({
+      id_usuario,
       operacion: targetEstado === 'ACTIVO' ? 'MODIFICAR' : 'DESACTIVAR',
       tabla_afectada: 'productos',
       id_registro_afectado: parseInt(id),
@@ -318,6 +332,7 @@ router.patch('/:id/estado', async (req, res) => {
 
     // Audit log
     await registrarOperacion({
+      id_usuario,
       operacion: targetEstado === 'ACTIVO' ? 'MODIFICAR' : 'DESACTIVAR',
       tabla_afectada: 'productos',
       id_registro_afectado: parseInt(id),
@@ -336,9 +351,11 @@ router.patch('/:id/estado', async (req, res) => {
 // 6. DELETE /api/productos/:id - Soft delete (desactivar)
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
+  const id_usuario = req.body?.id_usuario || 1;
   try {
     await pool.query("UPDATE productos SET estado = 'INACTIVO', fecha_actualizacion = CURRENT_TIMESTAMP WHERE id_producto = $1", [id]);
     await registrarOperacion({
+      id_usuario,
       operacion: 'DESACTIVAR',
       tabla_afectada: 'productos',
       id_registro_afectado: parseInt(id),
@@ -351,6 +368,7 @@ router.delete('/:id', async (req, res) => {
     if (prod) {
       prod.estado = 'INACTIVO';
       await registrarOperacion({
+        id_usuario,
         operacion: 'DESACTIVAR',
         tabla_afectada: 'productos',
         id_registro_afectado: parseInt(id),

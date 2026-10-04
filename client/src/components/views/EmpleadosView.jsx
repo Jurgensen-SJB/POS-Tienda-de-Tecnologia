@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import cajeroImg from '../../assets/img/cajero.webp';
+import adminImg from '../../assets/img/admin.webp';
+import superImg from '../../assets/img/super.webp';
+
+const getRoleAvatar = (rol = '') => {
+  const r = rol.toLowerCase();
+  if (r.includes('super')) return superImg;
+  if (r.includes('admin')) return adminImg;
+  return cajeroImg;
+};
 
 export const EmpleadosView = () => {
   const {
@@ -10,6 +20,7 @@ export const EmpleadosView = () => {
     openDeactivateEmployee,
     isAdmin,
     hasPermiso,
+    currentUser,
   } = useApp();
 
   const [filterEstado, setFilterEstado] = useState('ACTIVO');
@@ -119,8 +130,12 @@ export const EmpleadosView = () => {
               >
                 {/* Top row */}
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-full bg-slate-100 text-slate-600 font-bold flex items-center justify-center text-xs shrink-0 border border-slate-200">
-                    {initials}
+                  <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden border-2 border-slate-200 shadow-sm">
+                    <img
+                      src={getRoleAvatar(emp.rol || emp.cargo)}
+                      alt={emp.rol || 'empleado'}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-slate-800 truncate">
@@ -144,6 +159,21 @@ export const EmpleadosView = () => {
                   </p>
                 )}
 
+                {/* Usuario de acceso — solo visible para admin */}
+                {isAdmin && emp.nombre_usuario && (
+                  <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg">
+                    <span className="material-symbols-outlined text-slate-400" style={{fontSize:'12px'}}>manage_accounts</span>
+                    <span className="text-[10px] text-slate-500">Usuario:</span>
+                    <span className="text-[10px] font-mono font-semibold text-slate-700">{emp.nombre_usuario}</span>
+                  </div>
+                )}
+                {isAdmin && !emp.nombre_usuario && (
+                  <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-50 border border-amber-200 rounded-lg">
+                    <span className="material-symbols-outlined text-amber-500" style={{fontSize:'12px'}}>warning</span>
+                    <span className="text-[10px] text-amber-600">Sin usuario de acceso asignado</span>
+                  </div>
+                )}
+
                 {/* Divider */}
                 <div className="border-t border-slate-100" />
 
@@ -156,7 +186,7 @@ export const EmpleadosView = () => {
                     <span className="material-symbols-outlined" style={{fontSize:'12px'}}>visibility</span>
                     Consultar
                   </button>
-                  {hasPermiso('modificar_empleado') && (
+                  {(isAdmin || hasPermiso('modificar_empleado')) && (
                     <button
                       onClick={() => openEditEmployee(emp)}
                       className="flex-1 py-1.5 text-slate-600 hover:text-slate-800 hover:bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center gap-1 transition-colors font-medium text-[10px]"

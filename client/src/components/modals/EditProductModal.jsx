@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 
 export const EditProductModal = () => {
-  const { activeModal, closeModal, productToEdit, categories, saveEditedProduct, showToast } = useApp();
+  const { activeModal, closeModal, productToEdit, categories = [], providers = [], saveEditedProduct, showToast } = useApp();
 
   const [name, setName] = useState('');
   const [sku, setSku] = useState('');
@@ -11,6 +11,7 @@ export const EditProductModal = () => {
   const [stock, setStock] = useState('');
   const [minStock, setMinStock] = useState('');
   const [categoryId, setCategoryId] = useState('1');
+  const [providerId, setProviderId] = useState('1');
   const [imgUrl, setImgUrl] = useState('');
 
   useEffect(() => {
@@ -18,10 +19,11 @@ export const EditProductModal = () => {
       setName(productToEdit.nombre || '');
       setSku(productToEdit.codigo || '');
       setPrice(productToEdit.precio_venta !== undefined ? String(productToEdit.precio_venta) : '');
-      setCost(productToEdit.costo !== undefined ? String(productToEdit.costo) : '3.00');
+      setCost(productToEdit.costo !== undefined ? String(productToEdit.costo) : '120.00');
       setStock(productToEdit.stock !== undefined ? String(productToEdit.stock) : '0');
       setMinStock(productToEdit.stock_minimo !== undefined ? String(productToEdit.stock_minimo) : '5');
       setCategoryId(String(productToEdit.id_categoria || '1'));
+      setProviderId(String(productToEdit.id_proveedor || '1'));
       setImgUrl(productToEdit.imagen_url || '');
     }
   }, [productToEdit]);
@@ -53,6 +55,7 @@ export const EditProductModal = () => {
       nombre: name.trim(),
       precio_venta: priceNum,
       id_categoria: parseInt(categoryId),
+      id_proveedor: parseInt(providerId),
       stock: parseInt(stock) || 0,
       stock_minimo: parseInt(minStock) || 5,
       imagen_url: imgUrl,
@@ -111,6 +114,25 @@ export const EditProductModal = () => {
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
+          </div>
+
+          {/* Supplier */}
+          <div>
+            <label className="font-semibold text-slate-700 block mb-1 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-sm text-blue-600">local_shipping</span>
+              Proveedor Asociado
+            </label>
+            <select
+              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 focus:bg-white focus:ring-1 focus:ring-blue-600 focus:outline-none"
+              value={providerId}
+              onChange={(e) => setProviderId(e.target.value)}
+            >
+              {providers.map((p) => (
+                <option key={p.id_proveedor} value={p.id_proveedor}>
+                  {p.nombre} {p.identificacion ? `(${p.identificacion})` : ''}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Category */}
