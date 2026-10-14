@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
+import { api } from '../../api/api';
+import { formatCOP } from '../../utils/format';
 
 export const CierreZModal = () => {
   const { 
     activeModal, 
     closeModal, 
     caja, 
+    setCaja,
     invoices, 
     currentUser, 
     logout, 
@@ -97,10 +100,10 @@ export const CierreZModal = () => {
 
   const totalVentasTurno = ventasEfectivo + ventasTarjeta + ventasTransf;
 
-  // Fondo inicial: Si es individual = $150.00; si es global = monto inicial configurado
+  // Fondo inicial: Si es individual = $200.000; si es global = monto inicial configurado
   const fondoInicial = isConsolidated 
-    ? parseFloat(caja?.monto_inicial || 500.00) 
-    : 150.00;
+    ? parseFloat(caja?.monto_inicial || 200000) 
+    : 200000;
 
   const totalEsperadoGaveta = fondoInicial + ventasEfectivo;
 
@@ -124,13 +127,25 @@ export const CierreZModal = () => {
     }, 200);
   };
 
-  const handleFinalizarCierre = () => {
-    closeModal();
-    const cajeroTexto = isConsolidated ? 'Consolidado General de Tienda' : activeCajeroObj.nombre;
-    showToast(`Cierre Z completado exitosamente (${cajeroTexto}). Sesión finalizada.`, 'lock');
-    setTimeout(() => {
-      logout();
-    }, 400);
+  const handleFinalizarCierre = async () => {
+    try {
+      if (caja?.id_caja) {
+        await api.cierreCaja({
+          id_caja: caja.id_caja,
+          id_usuario_cierre: currentUser?.id_usuario || 1,
+          monto_final: totalEsperadoGaveta
+        });
+      }
+      if (setCaja) setCaja(null);
+      closeModal();
+      const cajeroTexto = isConsolidated ? 'Consolidado General de Tienda' : activeCajeroObj.nombre;
+      showToast(`Cierre Z completado exitosamente (${cajeroTexto}). Sesión finalizada.`, 'lock');
+      setTimeout(() => {
+        logout();
+      }, 400);
+    } catch (err) {
+      showToast('Error al cerrar caja: ' + (err.message || 'Intente nuevamente'), 'error');
+    }
   };
 
   return (
@@ -231,24 +246,24 @@ export const CierreZModal = () => {
 
               <div className="flex justify-between">
                 <span>Fondo Inicial Asignado:</span>
-                <span className="font-semibold">${fondoInicial.toFixed(2)}</span>
+                <span className="font-semibold">{formatCOP(fondoInicial)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Ventas en Efectivo:</span>
-                <span className="font-bold">${ventasEfectivo.toFixed(2)}</span>
+                <span className="font-bold">{formatCOP(ventasEfectivo)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Ventas Tarjeta POS:</span>
-                <span className="font-bold">${ventasTarjeta.toFixed(2)}</span>
+                <span className="font-bold">{formatCOP(ventasTarjeta)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Pagos Digitales / QR:</span>
-                <span className="font-bold">${ventasTransf.toFixed(2)}</span>
+                <span className="font-bold">{formatCOP(ventasTransf)}</span>
               </div>
 
               <div className="pt-2 border-t-2 border-slate-800 flex justify-between font-bold text-xs text-slate-900">
                 <span>TOTAL FACTURADO:</span>
-                <span>${totalVentasTurno.toFixed(2)}</span>
+                <span>{formatCOP(totalVentasTurno)}</span>
               </div>
             </div>
 
@@ -261,7 +276,7 @@ export const CierreZModal = () => {
                 {individualBreakdown.map(ib => (
                   <div key={ib.id} className="flex justify-between">
                     <span>{ib.nombre} ({ib.count} vtas):</span>
-                    <span className="font-bold font-mono">${ib.total.toFixed(2)}</span>
+                    <span className="font-bold font-mono">{formatCOP(ib.total)}</span>
                   </div>
                 ))}
               </div>
@@ -274,7 +289,7 @@ export const CierreZModal = () => {
               </div>
               <div className="flex justify-between font-bold text-xs text-slate-900">
                 <span>EFECTIVO A ENTREGAR:</span>
-                <span className="text-emerald-700 font-extrabold">${totalEsperadoGaveta.toFixed(2)}</span>
+                <span className="text-emerald-700 font-extrabold">{formatCOP(totalEsperadoGaveta)}</span>
               </div>
               <div className="flex justify-between text-[10px] text-slate-500">
                 <span>Comprobantes Emitidos:</span>

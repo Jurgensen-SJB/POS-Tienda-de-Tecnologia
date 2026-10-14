@@ -111,7 +111,7 @@ export const PaymentMethodsModal = () => {
                     type="text"
                     value={formNombre}
                     onChange={(e) => setFormNombre(e.target.value)}
-                    placeholder="Ej. Billetera Digital Yape/Plin, Cheque, Vale"
+                    placeholder="Ej. Billetera Nequi/Daviplata, Transferencia Bancolombia, Vale"
                     className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium focus:ring-1 focus:ring-blue-600 focus:outline-none"
                     autoFocus
                   />

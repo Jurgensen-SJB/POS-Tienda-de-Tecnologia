@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
+import { formatCOP } from '../../utils/format';
 
 export const EditProductModal = () => {
   const { activeModal, closeModal, productToEdit, categories = [], providers = [], saveEditedProduct, showToast } = useApp();
@@ -19,7 +20,7 @@ export const EditProductModal = () => {
       setName(productToEdit.nombre || '');
       setSku(productToEdit.codigo || '');
       setPrice(productToEdit.precio_venta !== undefined ? String(productToEdit.precio_venta) : '');
-      setCost(productToEdit.costo !== undefined ? String(productToEdit.costo) : '120.00');
+      setCost(productToEdit.costo !== undefined ? String(productToEdit.costo) : '150000');
       setStock(productToEdit.stock !== undefined ? String(productToEdit.stock) : '0');
       setMinStock(productToEdit.stock_minimo !== undefined ? String(productToEdit.stock_minimo) : '5');
       setCategoryId(String(productToEdit.id_categoria || '1'));
@@ -155,23 +156,23 @@ export const EditProductModal = () => {
           <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-2">
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Precio Costo ($)</label>
+                <label className="font-semibold text-slate-700 block mb-1">Precio Costo (COP)</label>
                 <input
                   className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-600 focus:outline-none"
                   min="0"
-                  step="0.01"
+                  step="any"
                   type="number"
                   value={cost}
                   onChange={(e) => setCost(e.target.value)}
                 />
               </div>
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Precio Venta PVP ($)</label>
+                <label className="font-semibold text-slate-700 block mb-1">Precio Venta PVP (COP)</label>
                 <input
                   className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-blue-700 focus:ring-1 focus:ring-blue-600 focus:outline-none"
-                  min="0.01"
+                  min="0"
                   required
-                  step="0.01"
+                  step="any"
                   type="number"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
@@ -181,7 +182,7 @@ export const EditProductModal = () => {
             <div className="flex items-center justify-between pt-1 text-[11px] border-t border-slate-200">
               <span className="text-slate-500 font-medium">Margen Estimado de Ganancia:</span>
               <span className={`font-mono font-bold ${profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                {profit >= 0 ? `+${marginPct}% ($${profit.toFixed(2)})` : `${marginPct}% ($${profit.toFixed(2)})`}
+                {profit >= 0 ? `+${marginPct}% (${formatCOP(profit)})` : `${marginPct}% (${formatCOP(profit)})`}
               </span>
             </div>
           </div>

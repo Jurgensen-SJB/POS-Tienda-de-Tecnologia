@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../api/api';
+import { formatCOP } from '../../utils/format';
 
 export const CajaView = () => {
   const { 
@@ -24,9 +25,6 @@ export const CajaView = () => {
 
   // Estados para Arqueo, Conteo y Diferencia
   const [contadoFisicoInput, setContadoFisicoInput] = useState('');
-  const [showAperturaModal, setShowAperturaModal] = useState(false);
-  const [montoInicialInput, setMontoInicialInput] = useState('150.00');
-  const [cargandoAccion, setCargandoAccion] = useState(false);
 
   // Estado para Historial de Cajas
   const [historialCajas, setHistorialCajas] = useState([]);
@@ -122,12 +120,12 @@ export const CajaView = () => {
     .reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
 
   const fondoInicial = (isAdmin && filterCajero === 'TODOS')
-    ? parseFloat(caja?.monto_inicial || 500.00).toFixed(2)
-    : '150.00';
+    ? parseFloat(caja?.monto_inicial || 200000)
+    : 200000;
 
-  const totalEfectivo = (parseFloat(fondoInicial) + ventasEfectivoReal).toFixed(2);
-  const ventasTarjeta = ventasTarjetaReal.toFixed(2);
-  const ventasTransf = ventasTransfReal.toFixed(2);
+  const totalEfectivo = fondoInicial + ventasEfectivoReal;
+  const ventasTarjeta = ventasTarjetaReal;
+  const ventasTransf = ventasTransfReal;
 
   const cajeroActivoNombre = currentUser 
     ? (currentUser.nombre_completo || currentUser.nombre) 
@@ -393,7 +391,7 @@ export const CajaView = () => {
                           </span>
                         </td>
                         <td className="p-2.5 text-right font-mono font-extrabold text-slate-900">
-                          ${parseFloat(inv.total).toFixed(2)}
+                          {formatCOP(inv.total)}
                         </td>
                         <td className="p-2.5 text-center">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
@@ -451,16 +449,20 @@ export const CajaView = () => {
             </div>
             
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
-                ● Turno Abierto
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                caja?.estado === 'ABIERTA' 
+                  ? 'bg-emerald-100 text-emerald-800' 
+                  : 'bg-amber-100 text-amber-800'
+              }`}>
+                {caja?.estado === 'ABIERTA' ? '● Turno Abierto' : '○ Caja Cerrada'}
               </span>
               <button
-                onClick={() => setShowAperturaModal(true)}
+                onClick={() => openModal('apertura-caja')}
                 className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1 border border-slate-200 cursor-pointer"
-                title="Registrar nueva apertura de caja con fondo inicial"
+                title="Registrar apertura de turno de caja con fondo inicial"
               >
                 <span className="material-symbols-outlined text-sm">lock_open</span>
-                Nueva Apertura
+                Apertura de Caja
               </button>
             </div>
           </div>
@@ -469,22 +471,22 @@ export const CajaView = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
             <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1">
               <span className="text-[10px] font-bold text-slate-500 uppercase">Efectivo Esperado en Gaveta</span>
-              <p className="text-2xl font-mono font-extrabold text-emerald-700">${totalEfectivo}</p>
-              <p className="text-[10.5px] text-slate-500">Fondo (${fondoInicial}) + Ventas Efectivo (${ventasEfectivoReal.toFixed(2)})</p>
+              <p className="text-2xl font-mono font-extrabold text-emerald-700">{formatCOP(totalEfectivo)}</p>
+              <p className="text-[10.5px] text-slate-500">Fondo ({formatCOP(fondoInicial)}) + Ventas Efectivo ({formatCOP(ventasEfectivoReal)})</p>
             </div>
 
             <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1">
               <span className="text-[10px] font-bold text-slate-500 uppercase">Ventas Electrónicas</span>
               <p className="text-2xl font-mono font-extrabold text-slate-900">
-                ${(parseFloat(ventasTarjeta) + parseFloat(ventasTransf)).toFixed(2)}
+                {formatCOP(ventasTarjeta + ventasTransf)}
               </p>
-              <p className="text-[10.5px] text-slate-500">Tarjetas (${ventasTarjeta}) + QR/Transf. (${ventasTransf})</p>
+              <p className="text-[10.5px] text-slate-500">Tarjetas ({formatCOP(ventasTarjeta)}) + QR/Transf. ({formatCOP(ventasTransf)})</p>
             </div>
 
             <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1">
               <span className="text-[10px] font-bold text-slate-500 uppercase">Ventas Brutas Totales</span>
               <p className="text-2xl font-mono font-extrabold text-blue-700">
-                ${(ventasEfectivoReal + parseFloat(ventasTarjeta) + parseFloat(ventasTransf)).toFixed(2)}
+                {formatCOP(ventasEfectivoReal + ventasTarjeta + ventasTransf)}
               </p>
               <p className="text-[10.5px] text-slate-500">Total acumulado en este turno</p>
             </div>
@@ -503,15 +505,15 @@ export const CajaView = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Efectivo Físico Contado ($)
+                  Efectivo Físico Contado (COP)
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-sm">$</span>
                   <input
                     type="number"
-                    step="0.01"
+                    step="any"
                     min="0"
-                    placeholder={`ej. ${totalEfectivo}`}
+                    placeholder={`ej. ${Math.round(totalEfectivo)}`}
                     value={contadoFisicoInput}
                     onChange={(e) => setContadoFisicoInput(e.target.value)}
                     className="w-full pl-7 pr-3 py-2 bg-white border border-slate-300 rounded-xl text-sm font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs"
@@ -525,9 +527,9 @@ export const CajaView = () => {
                 const esperado = parseFloat(totalEfectivo);
                 const hasInput = !isNaN(contado) && contadoFisicoInput.trim() !== '';
                 const diferencia = hasInput ? contado - esperado : 0;
-                const isExact = hasInput && Math.abs(diferencia) < 0.01;
-                const isSobrante = hasInput && diferencia > 0.01;
-                const isFaltante = hasInput && diferencia < -0.01;
+                const isExact = hasInput && Math.abs(diferencia) < 1;
+                const isSobrante = hasInput && diferencia >= 1;
+                const isFaltante = hasInput && diferencia <= -1;
 
                 return (
                   <div className={`p-3 rounded-xl border text-xs font-semibold ${
@@ -544,17 +546,17 @@ export const CajaView = () => {
                         {!hasInput ? 'Estado de Cuadre' : isExact ? '✓ Cuadre Exacto' : isSobrante ? '⚠️ Sobrante' : '❌ Faltante'}
                       </span>
                       <span className="font-mono text-sm font-extrabold">
-                        {!hasInput ? '$0.00' : `${diferencia >= 0 ? '+' : ''}$${diferencia.toFixed(2)}`}
+                        {!hasInput ? '$ 0' : `${diferencia >= 0 ? '+' : '-'}${formatCOP(Math.abs(diferencia))}`}
                       </span>
                     </div>
                     <p className="text-[11px] font-normal">
                       {!hasInput 
-                        ? `Esperado: $${totalEfectivo}. Ingresa el monto físico contado para verificar.`
+                        ? `Esperado: ${formatCOP(totalEfectivo)}. Ingresa el monto físico contado para verificar.`
                         : isExact 
                           ? 'La gaveta física coincide al 100% con los comprobantes registrados.'
                           : isSobrante 
-                            ? `Hay un sobrante en caja de +$${diferencia.toFixed(2)}. Verifica si faltó registrar algún cobro.`
-                            : `Hay un faltante en caja de -$${Math.abs(diferencia).toFixed(2)}. Verifica vueltos entregados.`}
+                            ? `Hay un sobrante en caja de +${formatCOP(diferencia)}. Verifica si faltó registrar algún cobro.`
+                            : `Hay un faltante en caja de -${formatCOP(Math.abs(diferencia))}. Verifica vueltos entregados.`}
                     </p>
                   </div>
                 );
@@ -663,19 +665,19 @@ export const CajaView = () => {
                           </div>
                         </td>
                         <td className="p-3 text-right font-mono font-bold text-slate-700">
-                          ${parseFloat(c.monto_inicial || 0).toFixed(2)}
+                          {formatCOP(c.monto_inicial || 0)}
                         </td>
                         <td className="p-3 text-right font-mono font-bold text-emerald-600">
-                          ${parseFloat(c.ventas_efectivo || 0).toFixed(2)}
+                          {formatCOP(c.ventas_efectivo || 0)}
                         </td>
                         <td className="p-3 text-right font-mono text-slate-600">
-                          ${(parseFloat(c.ventas_tarjeta || 0) + parseFloat(c.ventas_transferencia || 0)).toFixed(2)}
+                          {formatCOP(parseFloat(c.ventas_tarjeta || 0) + parseFloat(c.ventas_transferencia || 0))}
                         </td>
                         <td className="p-3 text-right font-mono font-extrabold text-slate-900">
-                          ${parseFloat(c.monto_esperado || (parseFloat(c.monto_inicial || 0) + parseFloat(c.ventas_efectivo || 0))).toFixed(2)}
+                          {formatCOP(c.monto_esperado || (parseFloat(c.monto_inicial || 0) + parseFloat(c.ventas_efectivo || 0)))}
                         </td>
                         <td className="p-3 text-right font-mono font-bold text-slate-800">
-                          {c.monto_final !== null ? `$${parseFloat(c.monto_final).toFixed(2)}` : (
+                          {c.monto_final !== null ? formatCOP(c.monto_final) : (
                             <span className="text-slate-400 italic text-[11px]">En curso</span>
                           )}
                         </td>
@@ -690,7 +692,7 @@ export const CajaView = () => {
                                   ? 'bg-blue-50 text-blue-700 border border-blue-200' 
                                   : 'bg-rose-50 text-rose-700 border border-rose-200'
                             }`}>
-                              {dif >= 0 ? '+' : ''}${dif.toFixed(2)}
+                              {dif >= 0 ? '+' : '-'}{formatCOP(Math.abs(dif))}
                             </span>
                           )}
                         </td>
@@ -713,89 +715,7 @@ export const CajaView = () => {
         </div>
       )}
 
-      {/* Modal de Apertura de Caja */}
-      {showAperturaModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4 border border-slate-200 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-emerald-600 text-lg">lock_open</span>
-                <h3 className="font-bold text-slate-900 text-xs">Apertura de Nuevo Turno de Caja</h3>
-              </div>
-              <button onClick={() => setShowAperturaModal(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
-                <span className="material-symbols-outlined text-base">close</span>
-              </button>
-            </div>
 
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Monto Fondo Inicial en Efectivo ($)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-sm">$</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={montoInicialInput}
-                    onChange={(e) => setMontoInicialInput(e.target.value)}
-                    className="w-full pl-7 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="150.00"
-                    autoFocus
-                  />
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1">
-                  Monto base entregado para sencillo y cambio en gaveta al inicio del turno.
-                </p>
-              </div>
-
-              <div className="p-2.5 bg-slate-50 rounded-lg text-slate-600 text-[11px] space-y-1">
-                <div className="flex justify-between">
-                  <span>Cajero Responsable:</span>
-                  <strong className="text-slate-800">{cajeroActivoNombre}</strong>
-                </div>
-                <div className="flex justify-between">
-                  <span>Hora de Inicio:</span>
-                  <span className="font-mono text-slate-700 font-semibold">{new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-2 border-t border-slate-100">
-              <button
-                onClick={() => setShowAperturaModal(false)}
-                className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                disabled={cargandoAccion || !montoInicialInput}
-                onClick={async () => {
-                  setCargandoAccion(true);
-                  try {
-                    await api.aperturaCaja({
-                      monto_inicial: parseFloat(montoInicialInput) || 150.00,
-                      id_usuario_apertura: currentUser?.id_usuario || 1
-                    });
-                    showToast(`Apertura de turno registrada con fondo de $${parseFloat(montoInicialInput || 150).toFixed(2)}`, 'lock_open');
-                    setShowAperturaModal(false);
-                    fetchCajasHistorial();
-                    if (loadData) loadData();
-                  } catch (err) {
-                    showToast('Error al registrar apertura: ' + err.message, 'error');
-                  } finally {
-                    setCargandoAccion(false);
-                  }
-                }}
-                className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-xs disabled:opacity-50"
-              >
-                {cargandoAccion ? 'Registrando...' : 'Confirmar Apertura'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../api/api';
+import { formatCOP } from '../../utils/format';
 
 export const StockView = () => {
   const {
@@ -266,7 +267,7 @@ export const StockView = () => {
                   <th className="p-3 min-w-[220px]">Producto</th>
                   <th className="p-3 w-[130px]">Categoría</th>
                   <th className="p-3 w-[160px]">Proveedor Asociado</th>
-                  <th className="p-3 w-[90px] text-right">PVP ($)</th>
+                  <th className="p-3 w-[120px] text-right">PVP (COP)</th>
                   <th className="p-3 w-[100px] text-center">Stock Almacén</th>
                   <th className="p-3 w-[80px] text-center">Estado</th>
                   <th className="p-3 text-right whitespace-nowrap">Acciones</th>
@@ -322,7 +323,7 @@ export const StockView = () => {
                           </div>
                         </td>
                         <td className="p-3 text-right font-mono font-bold text-slate-900 text-xs">
-                          ${parseFloat(p.precio_venta).toFixed(2)}
+                          {formatCOP(p.precio_venta)}
                         </td>
                         <td className="p-3 text-center">
                           <span
@@ -478,8 +479,8 @@ export const StockView = () => {
 
                         <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
                           <span className="text-xs text-slate-400">PVP:</span>
-                          <span className="text-base font-extrabold text-blue-700 font-mono">
-                            ${parseFloat(p.precio_venta).toFixed(2)}
+                          <span className="text-sm font-extrabold text-blue-700 font-mono">
+                            {formatCOP(p.precio_venta)}
                           </span>
                         </div>
                       </div>

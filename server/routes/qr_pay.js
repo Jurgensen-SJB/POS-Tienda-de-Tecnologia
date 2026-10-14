@@ -3,16 +3,27 @@ const router = express.Router();
 const os = require('os');
 
 // Detect local machine LAN IPv4 address (e.g., 192.168.1.4)
-function getLocalNetworkIp() {
+// Detect local machine LAN IPv4 addresses
+function getNetworkInterfacesList() {
   const interfaces = os.networkInterfaces();
+  const list = [];
   for (const name of Object.keys(interfaces)) {
     for (const iface of interfaces[name]) {
       if (iface.family === 'IPv4' && !iface.internal && !iface.address.startsWith('169.254')) {
-        return iface.address;
+        list.push({ name, address: iface.address });
       }
     }
   }
-  return 'localhost';
+  return list;
+}
+
+function getLocalNetworkIp() {
+  const list = getNetworkInterfacesList();
+  // Prioritize Wi-Fi or Ethernet
+  const preferred = list.find(i => /wi-?fi|wlan|wireless/i.test(i.name)) 
+    || list.find(i => /ethernet|eth|en/i.test(i.name)) 
+    || list[0];
+  return preferred ? preferred.address : 'localhost';
 }
 
 // In-memory store for QR payment sessions { ref -> { status, amount, merchant, items, createdAt } }
@@ -21,9 +32,11 @@ const qrSessions = new Map();
 // ── API: Network info for QR generation (gives LAN IP so mobile phones can connect) ──
 router.get('/info', (req, res) => {
   const ip = getLocalNetworkIp();
+  const allInterfaces = getNetworkInterfacesList();
   const port = process.env.PORT || 5000;
   res.json({
     ip,
+    allIps: allInterfaces,
     port,
     baseUrl: `http://${ip}:${port}`
   });
@@ -116,8 +129,9 @@ router.get('/', (req, res) => {
   }
 
   const totalNum = parseFloat(amount) || 0;
-  const subtotalNum = totalNum > 0 ? (totalNum / 1.18) : 0;
-  const igvNum = totalNum - subtotalNum;
+  const subtotalNum = totalNum > 0 ? (totalNum / 1.19) : 0;
+  const ivaNum = totalNum - subtotalNum;
+  const formatCOP = (val) => '$ ' + Math.round(Number(val) || 0).toLocaleString('es-CO');
 
   const existingSession = qrSessions.get(ref);
   const sessionItems = existingSession?.items || [];
@@ -587,8 +601,8 @@ router.get('/', (req, res) => {
               <tr>
                 <td class="col-qty">${item.qty}</td>
                 <td><strong>${item.name}</strong></td>
-                <td class="col-price">$ ${item.price.toFixed(2)}</td>
-                <td class="col-total">$ ${(item.qty * item.price).toFixed(2)}</td>
+                <td class="col-price">${formatCOP(item.price)}</td>
+                <td class="col-total">${formatCOP(item.qty * item.price)}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -600,15 +614,15 @@ router.get('/', (req, res) => {
         <div class="totals-box">
           <div class="tot-row">
             <span>Op. Gravada (Subtotal):</span>
-            <span style="font-family: 'JetBrains Mono', monospace;">$ ${subtotalNum.toFixed(2)}</span>
+            <span style="font-family: 'JetBrains Mono', monospace;">${formatCOP(subtotalNum)}</span>
           </div>
           <div class="tot-row">
-            <span>I.G.V. (18%):</span>
-            <span style="font-family: 'JetBrains Mono', monospace;">$ ${igvNum.toFixed(2)}</span>
+            <span>I.V.A. (19%):</span>
+            <span style="font-family: 'JetBrains Mono', monospace;">${formatCOP(ivaNum)}</span>
           </div>
           <div class="tot-row grand-total">
             <span>TOTAL FACTURADO:</span>
-            <span class="grand-amount">$ ${totalNum.toFixed(2)}</span>
+            <span class="grand-amount">${formatCOP(totalNum)}</span>
           </div>
         </div>
       </div>

@@ -48,13 +48,13 @@ export const ManualItemModal = () => {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="font-semibold text-slate-700 block mb-1">Precio ($)</label>
+              <label className="font-semibold text-slate-700 block mb-1">Precio (COP)</label>
               <input
                 className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono focus:bg-white focus:ring-1 focus:ring-blue-600 focus:outline-none"
-                min="0.05"
-                placeholder="5.00"
+                min="0"
+                placeholder="20000"
                 required
-                step="0.01"
+                step="any"
                 type="number"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
+import { formatCOP } from '../../utils/format';
 
 export const ProductDetailModal = () => {
   const {
@@ -93,13 +94,13 @@ export const ProductDetailModal = () => {
             <div className="p-3 bg-white border border-slate-200 rounded-xl">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Precio Venta (PVP)</span>
               <span className="font-mono text-base font-bold text-slate-900 block mt-0.5">
-                ${pvp.toFixed(2)}
+                {formatCOP(pvp)}
               </span>
             </div>
             <div className="p-3 bg-white border border-slate-200 rounded-xl">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Costo Referencial</span>
               <span className="font-mono text-base font-semibold text-slate-600 block mt-0.5">
-                ${cost.toFixed(2)}
+                {formatCOP(cost)}
               </span>
             </div>
             <div className="p-3 bg-white border border-slate-200 rounded-xl">

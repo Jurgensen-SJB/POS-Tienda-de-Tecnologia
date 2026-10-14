@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../api/api';
+import { formatCOP } from '../../utils/format';
 
 export const NewProductModal = () => {
   const { activeModal, closeModal, categories = [], providers = [], setProducts, showToast, currentUser } = useApp();
@@ -12,8 +13,8 @@ export const NewProductModal = () => {
   const [categoryId, setCategoryId] = useState('1');
   const [providerId, setProviderId] = useState('1');
   const [unit, setUnit] = useState('Unidad (und)');
-  const [cost, setCost] = useState('120.00');
-  const [price, setPrice] = useState('189.00');
+  const [cost, setCost] = useState('150000');
+  const [price, setPrice] = useState('220000');
   const [stock, setStock] = useState('20');
   const [minStock, setMinStock] = useState('4');
 
@@ -251,24 +252,26 @@ export const NewProductModal = () => {
           <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-2">
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Costo de Compra Proveedor ($)</label>
+                <label className="font-semibold text-slate-700 block mb-1">Costo de Compra Proveedor (COP)</label>
                 <input
                   className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono focus:ring-1 focus:ring-blue-600 focus:outline-none"
                   min="0"
-                  step="0.01"
+                  step="any"
                   type="number"
+                  placeholder="150000"
                   value={cost}
                   onChange={(e) => setCost(e.target.value)}
                 />
               </div>
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Precio Venta PVP ($)</label>
+                <label className="font-semibold text-slate-700 block mb-1">Precio Venta PVP (COP)</label>
                 <input
                   className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-blue-700 focus:ring-1 focus:ring-blue-600 focus:outline-none"
-                  min="0.10"
+                  min="0"
                   required
-                  step="0.01"
+                  step="any"
                   type="number"
+                  placeholder="220000"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                 />
@@ -277,7 +280,7 @@ export const NewProductModal = () => {
             <div className="flex items-center justify-between pt-1 text-[11px] border-t border-slate-200">
               <span className="text-slate-500 font-medium">Margen Estimado de Ganancia:</span>
               <span className={`font-mono font-bold ${profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                {profit >= 0 ? `+${marginPct}% ($${profit.toFixed(2)})` : `${marginPct}% ($${profit.toFixed(2)})`}
+                {profit >= 0 ? `+${marginPct}% (${formatCOP(profit)})` : `${marginPct}% (${formatCOP(profit)})`}
               </span>
             </div>
           </div>

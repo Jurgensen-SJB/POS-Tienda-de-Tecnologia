@@ -1,5 +1,6 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
+import { formatCOP } from '../../utils/format';
 import logoImg from '../../assets/img/logo.png';
 
 export const CheckoutSuccessModal = () => {
@@ -69,12 +70,12 @@ export const CheckoutSuccessModal = () => {
                 <div key={idx} className="space-y-0.5">
                   <div className="flex justify-between">
                     <span>{item.qty}x {item.name}</span>
-                    <span className="font-bold">${itemTotal.toFixed(2)}</span>
+                    <span className="font-bold">{formatCOP(itemTotal)}</span>
                   </div>
                   {lineDisc > 0 && (
                     <div className="flex justify-between text-[10px] text-emerald-600 pl-3">
                       <span>↳ Descuento {item.discountPct ? `(-${item.discountPct}%)` : ''}:</span>
-                      <span>-${lineDisc.toFixed(2)}</span>
+                      <span>-{formatCOP(lineDisc)}</span>
                     </div>
                   )}
                 </div>
@@ -88,32 +89,32 @@ export const CheckoutSuccessModal = () => {
           <div className="space-y-1">
             <div className="flex justify-between text-slate-500">
               <span>Subtotal:</span>
-              <span>${parseFloat(subtotal || total).toFixed(2)}</span>
+              <span>{formatCOP(subtotal || total)}</span>
             </div>
             {parseFloat(discountAmount) > 0 && (
               <div className="flex justify-between text-emerald-600 font-bold">
                 <span>{discountLabel || 'Descuento:'}</span>
-                <span>-${parseFloat(discountAmount).toFixed(2)}</span>
+                <span>-{formatCOP(discountAmount)}</span>
               </div>
             )}
             <div className="flex justify-between text-slate-500">
-              <span>IGV / Impuesto (18%):</span>
-              <span>${parseFloat(tax || 0).toFixed(2)}</span>
+              <span>IVA (19%):</span>
+              <span>{formatCOP(tax || 0)}</span>
             </div>
             <div className="border-t border-dashed border-slate-300 pt-1 flex justify-between font-bold text-slate-900 text-xs">
               <span>TOTAL COBRADO:</span>
-              <span>${parseFloat(total).toFixed(2)}</span>
+              <span>{formatCOP(total)}</span>
             </div>
           </div>
 
           <div className="border-b border-dashed border-slate-300 my-1.5"></div>
           <div className="flex justify-between text-slate-500">
             <span>Monto Recibido:</span>
-            <span>${parseFloat(received).toFixed(2)}</span>
+            <span>{formatCOP(received)}</span>
           </div>
           <div className="flex justify-between text-slate-500">
             <span>Cambio / Vuelto:</span>
-            <span className="text-emerald-600 font-bold">${parseFloat(vuelto).toFixed(2)}</span>
+            <span className="text-emerald-600 font-bold">{formatCOP(vuelto)}</span>
           </div>
           <div className="border-b border-dashed border-slate-300 my-1.5"></div>
           <div className="text-center text-[10px] text-slate-400 italic">

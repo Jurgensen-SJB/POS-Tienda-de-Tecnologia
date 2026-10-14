@@ -1,5 +1,6 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
+import { formatCOP } from '../../utils/format';
 
 export const TurnoModal = () => {
   const { activeModal, closeModal, openModal, caja, invoices, currentUser, setCurrentView } = useApp();
@@ -27,10 +28,10 @@ export const TurnoModal = () => {
     .reduce((sum, inv) => sum + (parseFloat(inv.total) || 0), 0);
 
   const fondoInicial = isAdmin 
-    ? parseFloat(caja?.monto_inicial || 500).toFixed(2) 
-    : '150.00';
+    ? parseFloat(caja?.monto_inicial || 200000) 
+    : 200000;
 
-  const totalEnCaja = (parseFloat(fondoInicial) + userCash).toFixed(2);
+  const totalEnCaja = fondoInicial + userCash;
   const ticketsCount = userInvoices.length;
 
   const handleCierreZ = () => {
@@ -71,11 +72,11 @@ export const TurnoModal = () => {
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Fondo Inicial:</span>
-              <span className="font-mono text-slate-800 font-semibold">${fondoInicial}</span>
+              <span className="font-mono text-slate-800 font-semibold">{formatCOP(fondoInicial)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Efectivo en Gaveta:</span>
-              <span className="font-mono text-emerald-600 font-bold">${totalEnCaja}</span>
+              <span className="font-mono text-emerald-600 font-bold">{formatCOP(totalEnCaja)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Comprobantes Emitidos:</span>

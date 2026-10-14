@@ -1,5 +1,6 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
+import { formatCOP } from '../../utils/format';
 
 export const ProductCard = ({ product }) => {
   const { addToCart, showToast } = useApp();
@@ -7,7 +8,6 @@ export const ProductCard = ({ product }) => {
   const stock = product.stock !== undefined ? product.stock : 0;
   const isOutOfStock = stock <= 0;
   const isLowStock = !isOutOfStock && stock <= (product.stock_minimo || 5);
-  const price = parseFloat(product.precio_venta).toFixed(2);
 
   const handleCardClick = () => {
     if (isOutOfStock) {
@@ -58,8 +58,8 @@ export const ProductCard = ({ product }) => {
 
       {/* Price & Add Action: dedicated footer */}
       <div className="flex items-center justify-between pt-1 border-t border-slate-100 shrink-0">
-        <span className={`text-sm font-extrabold font-mono tracking-tight ${isOutOfStock ? 'text-slate-400' : 'text-blue-700'}`}>
-          ${price}
+        <span className={`text-xs font-extrabold font-mono tracking-tight ${isOutOfStock ? 'text-slate-400' : 'text-blue-700'}`}>
+          {formatCOP(product.precio_venta)}
         </span>
         <button
           onClick={(e) => {

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
+import { formatCOP } from '../../utils/format';
 
 export const EstadisticasView = () => {
   const {
@@ -191,7 +192,7 @@ export const EstadisticasView = () => {
           </div>
           <div className="mt-2">
             <span className="text-2xl font-mono font-extrabold text-slate-900 block">
-              ${totalVentas.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatCOP(totalVentas)}
             </span>
             <div className="flex items-center gap-1.5 mt-1 text-[11px] text-emerald-700 font-semibold">
               <span className="material-symbols-outlined text-xs">trending_up</span>
@@ -213,7 +214,7 @@ export const EstadisticasView = () => {
           </div>
           <div className="mt-2">
             <span className="text-2xl font-mono font-extrabold text-blue-600 block">
-              ${ticketPromedio.toFixed(2)}
+              {formatCOP(ticketPromedio)}
             </span>
             <span className="text-[11px] text-slate-500 block mt-1">
               Gasto medio por cliente en POS
@@ -234,7 +235,7 @@ export const EstadisticasView = () => {
           </div>
           <div className="mt-2">
             <span className="text-2xl font-mono font-extrabold text-slate-800 block">
-              ${totalCompras.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatCOP(totalCompras)}
             </span>
             <span className="text-[11px] text-slate-500 block mt-1">
               {purchases.length} órdenes con proveedores
@@ -255,7 +256,7 @@ export const EstadisticasView = () => {
           </div>
           <div className="mt-2">
             <span className="text-2xl font-mono font-extrabold text-emerald-600 block">
-              ${gananciaEstimada.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatCOP(gananciaEstimada)}
             </span>
             <span className="text-[11px] text-emerald-700 font-semibold block mt-1">
               ~32.0% rentabilidad bruta
@@ -296,7 +297,7 @@ export const EstadisticasView = () => {
                       {pm.name}
                     </span>
                     <div className="flex items-center gap-2 font-mono">
-                      <span className="font-bold text-slate-900">${pm.total.toFixed(2)}</span>
+                      <span className="font-bold text-slate-900">{formatCOP(pm.total)}</span>
                       <span className="text-[11px] text-slate-400">({pm.pct}%)</span>
                     </div>
                   </div>
@@ -345,7 +346,7 @@ export const EstadisticasView = () => {
 
                   <div className="text-right">
                     <span className="font-mono font-extrabold text-xs text-slate-900 block">
-                      ${cb.total.toFixed(2)}
+                      {formatCOP(cb.total)}
                     </span>
                     <span className="text-[10px] font-bold text-blue-600">{cb.pct}% del total</span>
                   </div>
@@ -385,8 +386,8 @@ export const EstadisticasView = () => {
                   <span className="text-slate-500 font-medium text-[11px]">
                     {tp.unitsSold} vendidas
                   </span>
-                  <span className="font-bold text-slate-900 w-20">
-                    ${tp.revenue.toFixed(2)}
+                  <span className="font-bold text-slate-900 min-w-24">
+                    {formatCOP(tp.revenue)}
                   </span>
                 </div>
               </div>

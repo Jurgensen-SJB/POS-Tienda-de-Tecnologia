@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
+import { formatCOP } from '../../utils/format';
 
 export const CorteXModal = () => {
   const { activeModal, closeModal, caja, invoices, currentUser, showToast } = useApp();
@@ -82,8 +83,8 @@ export const CorteXModal = () => {
   const totalVentasTurno = ventasEfectivo + ventasTarjeta + ventasTransf;
 
   const fondoInicial = isConsolidated 
-    ? parseFloat(caja?.monto_inicial || 500.00) 
-    : 150.00;
+    ? parseFloat(caja?.monto_inicial || 200000) 
+    : 200000;
 
   const totalEsperadoGaveta = fondoInicial + ventasEfectivo;
   const ticketsCount = relevantInvoices.length;
@@ -170,24 +171,24 @@ export const CorteXModal = () => {
               
               <div className="flex justify-between">
                 <span>(+) Fondo Inicial Apertura:</span>
-                <span className="font-bold">${fondoInicial.toFixed(2)}</span>
+                <span className="font-bold">{formatCOP(fondoInicial)}</span>
               </div>
               <div className="flex justify-between">
                 <span>(+) Ventas Efectivo:</span>
-                <span className="font-bold">${ventasEfectivo.toFixed(2)}</span>
+                <span className="font-bold">{formatCOP(ventasEfectivo)}</span>
               </div>
               <div className="flex justify-between">
                 <span>(+) Ventas Tarjeta POS:</span>
-                <span className="font-bold">${ventasTarjeta.toFixed(2)}</span>
+                <span className="font-bold">{formatCOP(ventasTarjeta)}</span>
               </div>
               <div className="flex justify-between">
                 <span>(+) Pagos Digitales / QR:</span>
-                <span className="font-bold">${ventasTransf.toFixed(2)}</span>
+                <span className="font-bold">{formatCOP(ventasTransf)}</span>
               </div>
 
               <div className="pt-2 border-t border-slate-300 flex justify-between font-bold text-xs">
                 <span>TOTAL VENTAS:</span>
-                <span>${totalVentasTurno.toFixed(2)}</span>
+                <span>{formatCOP(totalVentasTurno)}</span>
               </div>
             </div>
 
@@ -198,7 +199,7 @@ export const CorteXModal = () => {
               </div>
               <div className="flex justify-between font-bold text-xs text-slate-900">
                 <span>EFECTIVO EN GAVETA:</span>
-                <span className="text-emerald-700">${totalEsperadoGaveta.toFixed(2)}</span>
+                <span className="text-emerald-700">{formatCOP(totalEsperadoGaveta)}</span>
               </div>
               <div className="flex justify-between text-[10px] text-slate-500">
                 <span>Total Comprobantes Emitidos:</span>

@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
+import QRCode from "qrcode";
 import { useApp } from "../../context/AppContext";
+import { formatCOP } from "../../utils/format";
 
 const SERVER = "http://localhost:5000";
 
@@ -13,10 +15,6 @@ const getMethodIcon = (nombre = "") => {
   if (n.includes("vale") || n.includes("cupon")) return "confirmation_number";
   return "payments";
 };
-
-// Generate QR image URL (public API)
-const buildQrUrl = (data, size = 130) =>
-  `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}&bgcolor=ffffff&color=1e3a5f&margin=6`;
 
 export const PaymentPanel = () => {
   const {
@@ -47,7 +45,17 @@ export const PaymentPanel = () => {
   // QR payment session state
   const [qrRef, setQrRef] = useState("");
   const [qrStatus, setQrStatus] = useState("idle"); // idle | waiting | paid
-  const [serverLanUrl, setServerLanUrl] = useState(SERVER);
+  const [serverLanUrl, setServerLanUrl] = useState(() => {
+    if (typeof window !== "undefined" && window.location.hostname && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+      return `http://${window.location.hostname}:5000`;
+    }
+    return "http://localhost:5000";
+  });
+  const [detectedIps, setDetectedIps] = useState([]);
+  const [qrDataUrl, setQrDataUrl] = useState("");
+  const [isEditingIp, setIsEditingIp] = useState(false);
+  const [customIpInput, setCustomIpInput] = useState("");
+
   const pollRef = useRef(null);
   const isCheckingOutRef = useRef(false);
 
@@ -58,14 +66,26 @@ export const PaymentPanel = () => {
   }, [executeCheckout]);
 
   // Fetch server LAN IP so QR can be scanned by real phones on WiFi
-  useEffect(() => {
-    fetch(`${SERVER}/api/qr-pay/info`)
-      .then(r => r.json())
-      .then(d => {
-        if (d?.baseUrl) setServerLanUrl(d.baseUrl);
+  const refreshNetworkInfo = useCallback(() => {
+    const apiHost = typeof window !== "undefined" && window.location.hostname && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1"
+      ? `http://${window.location.hostname}:5000`
+      : SERVER;
+
+    fetch(`${apiHost}/api/qr-pay/info`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.baseUrl) {
+          setServerLanUrl(d.baseUrl);
+          setCustomIpInput(d.baseUrl.replace(/^http:\/\//, ""));
+        }
+        if (d?.allIps) setDetectedIps(d.allIps);
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    refreshNetworkInfo();
+  }, [refreshNetworkInfo]);
 
   // Active payment methods from DB, fallback to 3 defaults
   const activeMethods = (paymentMethods || []).filter((pm) => pm.estado === "ACTIVO");
@@ -163,19 +183,49 @@ export const PaymentPanel = () => {
   useEffect(() => {
     if (resolvedPay?.type === "cash" && (!cashReceived || parseFloat(cashReceived) < grandTotal)) {
       if (grandTotal > 0) {
-        setCashReceived(grandTotal > 100 ? (Math.ceil(grandTotal / 50) * 50).toFixed(2) : "100.00");
+        setCashReceived(String(Math.round(grandTotal)));
       }
     }
   }, [grandTotal, resolvedPay?.type]);
 
   const setMontoPreset = (val) => {
-    setCashReceived(val.toFixed(2));
-    showToast(`Monto recibido: $${val.toFixed(2)}`);
+    const num = Math.round(val);
+    setCashReceived(String(num));
+    showToast(`Monto recibido: ${formatCOP(num)}`);
   };
 
   const setMontoExacto = () => {
-    setCashReceived(grandTotal.toFixed(2));
+    const exact = Math.round(grandTotal);
+    setCashReceived(String(exact));
     showToast("Cobro de monto exacto");
+  };
+
+  const currentRefNum = qrRef || `NX-${String(Math.abs(Math.floor(grandTotal) + 2342)).padStart(6, "0")}`;
+  const currentPayUrl = `${serverLanUrl}/pay?ref=${encodeURIComponent(currentRefNum)}&amount=${Math.round(grandTotal)}`;
+
+  useEffect(() => {
+    if (!currentPayUrl) return;
+    QRCode.toDataURL(currentPayUrl, {
+      width: 150,
+      margin: 1,
+      color: {
+        dark: "#0f172a",
+        light: "#ffffff",
+      },
+    })
+      .then((url) => setQrDataUrl(url))
+      .catch((err) => console.error("Error generating QR:", err));
+  }, [currentPayUrl]);
+
+  // Handle custom IP change
+  const handleSaveCustomIp = (e) => {
+    e?.preventDefault();
+    let cleaned = customIpInput.trim().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+    if (!cleaned) return;
+    if (!cleaned.includes(":")) cleaned = `${cleaned}:5000`;
+    setServerLanUrl(`http://${cleaned}`);
+    setIsEditingIp(false);
+    showToast(`IP actualizada a ${cleaned}`, "wifi");
   };
 
   const currentIsCash = resolvedPay?.type === "cash";
@@ -186,16 +236,16 @@ export const PaymentPanel = () => {
       {/* Financial breakdown + Total unificado compacto */}
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 space-y-1">
         <div className="flex justify-between items-center text-[10.5px] text-slate-500 font-medium">
-          <span>Subtotal: <strong className="font-mono text-slate-700">${subtotal.toFixed(2)}</strong></span>
+          <span>Subtotal: <strong className="font-mono text-slate-700">{formatCOP(subtotal)}</strong></span>
           {discountAmount > 0 && (
-            <span className="text-emerald-600 font-semibold">Desc: <strong className="font-mono">-${discountAmount.toFixed(2)}</strong></span>
+            <span className="text-emerald-600 font-semibold">Desc: <strong className="font-mono">-{formatCOP(discountAmount)}</strong></span>
           )}
-          <span>IGV 18%: <strong className="font-mono text-slate-700">${tax.toFixed(2)}</strong></span>
+          <span>IVA 19%: <strong className="font-mono text-slate-700">{formatCOP(tax)}</strong></span>
         </div>
         <div className="flex items-center justify-between pt-1 border-t border-slate-200">
           <span className="text-[10px] font-bold text-blue-800 uppercase tracking-wider">TOTAL A COBRAR:</span>
-          <span className="text-xl font-extrabold text-blue-700 font-mono" id="total-val">
-            ${grandTotal.toFixed(2)} <span className="text-[10px] font-bold text-blue-500">USD</span>
+          <span className="text-lg font-extrabold text-blue-700 font-mono" id="total-val">
+            {formatCOP(grandTotal)} <span className="text-[10px] font-bold text-blue-500">COP</span>
           </span>
         </div>
       </div>
@@ -229,27 +279,42 @@ export const PaymentPanel = () => {
         <div className="bg-slate-50 p-2 rounded-lg border border-slate-200 space-y-1.5 text-xs" id="box-cash-calc">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[11px] font-semibold text-slate-700">Monto Recibido:</span>
-            <div className="relative w-28">
+            <div className="relative w-32">
               <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">$</span>
               <input
                 className="w-full pl-5 pr-1.5 py-0.5 text-right font-mono font-bold text-xs bg-white rounded border border-slate-300 focus:ring-1 focus:ring-blue-600 focus:outline-none"
                 id="input-monto-recibido"
                 step="any"
+                min="0"
                 type="number"
                 value={cashReceived}
                 onChange={(e) => setCashReceived(e.target.value)}
               />
             </div>
           </div>
-          <div className="flex items-center justify-end gap-1 text-[10px]">
-            <button className="px-2 py-0.5 bg-white border border-slate-300 rounded font-semibold text-slate-600 hover:bg-slate-100 transition-colors" onClick={() => setMontoPreset(50)}>$50</button>
-            <button className="px-2 py-0.5 bg-white border border-slate-300 rounded font-semibold text-slate-600 hover:bg-slate-100 transition-colors" onClick={() => setMontoPreset(100)}>$100</button>
-            <button className="px-2 py-0.5 bg-white border border-slate-300 rounded font-semibold text-slate-600 hover:bg-slate-100 transition-colors" onClick={() => setMontoPreset(150)}>$150</button>
-            <button className="px-2 py-0.5 bg-blue-100 text-blue-700 font-bold rounded hover:bg-blue-200 transition-colors" onClick={setMontoExacto}>Exacto</button>
+          <div className="flex items-center justify-end gap-1 text-[10px] flex-wrap">
+            {(() => {
+              const tot = Math.round(grandTotal || 0);
+              const b50 = Math.ceil(tot / 50000) * 50000;
+              const b100 = Math.ceil(tot / 100000) * 100000;
+              const extra = (b100 > tot ? b100 : b50) + 50000;
+              const list = Array.from(new Set([b50, b100, extra])).filter(x => x >= tot);
+              if (list.length === 0) list.push(tot > 0 ? tot : 50000);
+              return list.slice(0, 3).map(p => (
+                <button
+                  key={p}
+                  className="px-1.5 py-0.5 bg-white border border-slate-300 rounded font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                  onClick={() => setMontoPreset(p)}
+                >
+                  ${(p >= 1000000 ? (p / 1000000).toFixed(1) + 'M' : Math.round(p / 1000) + 'k')}
+                </button>
+              ));
+            })()}
+            <button className="px-2 py-0.5 bg-blue-100 text-blue-700 font-bold rounded hover:bg-blue-200 transition-colors cursor-pointer" onClick={setMontoExacto}>Exacto</button>
           </div>
           <div className="flex items-center justify-between pt-1 border-t border-slate-200">
             <span className="font-bold text-slate-700 text-[11px]">Cambio / Vuelto:</span>
-            <span className="text-sm font-bold text-emerald-600 font-mono" id="vuelto-val">${vuelto.toFixed(2)}</span>
+            <span className="text-sm font-bold text-emerald-600 font-mono" id="vuelto-val">{formatCOP(vuelto)}</span>
           </div>
         </div>
 
@@ -330,102 +395,164 @@ export const PaymentPanel = () => {
             </button>
           </div>
         </div>
-
       ) : (
         /* ── QR / TRANSFERENCIA: Layout horizontal hiper-compacto ── */
-        (() => {
-          const refNum = qrRef || `NX-${String(Math.abs(Math.floor(grandTotal * 100) + 2342)).padStart(6, "0")}`;
-          // URL concisa para que los módulos del QR sean grandes y legibles al instante desde el celular
-          const payPageUrl = `${serverLanUrl}/pay?ref=${encodeURIComponent(refNum)}&amount=${grandTotal.toFixed(2)}`;
-          const qrUrl = buildQrUrl(payPageUrl, 120);
+        <div className="border border-slate-200 rounded-lg overflow-hidden text-xs bg-white shadow-xs" id="box-qr-pay">
+          {/* Header compacto */}
+          <div className="bg-slate-800 px-2.5 py-1 flex items-center justify-between text-white">
+            <div className="flex items-center gap-1">
+              <span className="material-symbols-outlined text-blue-400 text-xs">qr_code_2</span>
+              <span className="font-bold text-[10px] tracking-wide">PAGO MÓVIL / QR</span>
+            </div>
+            <div className={`flex items-center gap-1 text-[9.5px] font-bold px-1.5 py-0.2 rounded-full ${
+              qrStatus === "paid"    ? "bg-emerald-500 text-white" :
+              qrStatus === "waiting" ? "bg-amber-400 text-slate-900 animate-pulse" :
+              "bg-slate-700 text-slate-300"
+            }`}>
+              <span className="material-symbols-outlined text-[10px]">
+                {qrStatus === "paid" ? "check_circle" : qrStatus === "waiting" ? "hourglass_top" : "qr_code_scanner"}
+              </span>
+              {qrStatus === "paid" ? "Confirmado ✓" : qrStatus === "waiting" ? "Esperando Pago..." : "Listo"}
+            </div>
+          </div>
 
-          return (
-            <div className="border border-slate-200 rounded-lg overflow-hidden text-xs bg-white shadow-xs" id="box-qr-pay">
-              {/* Header compacto */}
-              <div className="bg-slate-800 px-2.5 py-1 flex items-center justify-between text-white">
-                <div className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-blue-400 text-xs">qr_code_2</span>
-                  <span className="font-bold text-[10px] tracking-wide">PAGO MÓVIL / QR</span>
-                </div>
-                <div className={`flex items-center gap-1 text-[9.5px] font-bold px-1.5 py-0.2 rounded-full ${
-                  qrStatus === "paid"    ? "bg-emerald-500 text-white" :
-                  qrStatus === "waiting" ? "bg-amber-400 text-slate-900 animate-pulse" :
-                  "bg-slate-700 text-slate-300"
-                }`}>
-                  <span className="material-symbols-outlined text-[10px]">
-                    {qrStatus === "paid" ? "check_circle" : qrStatus === "waiting" ? "hourglass_top" : "qr_code_scanner"}
-                  </span>
-                  {qrStatus === "paid" ? "Confirmado ✓" : qrStatus === "waiting" ? "Esperando Pago..." : "Listo"}
-                </div>
+          {/* Selector / Edición rápida de IP */}
+          {isEditingIp ? (
+            <form onSubmit={handleSaveCustomIp} className="p-2 bg-blue-50/70 border-b border-blue-200 flex flex-col gap-1.5">
+              <div className="flex items-center justify-between text-[10px] font-bold text-blue-900">
+                <span>Configurar IP de Red para el Celular:</span>
+                <button type="button" onClick={() => setIsEditingIp(false)} className="text-slate-400 hover:text-slate-600">✕</button>
               </div>
-
-              {/* Contenido horizontal: QR a la izquierda, acciones a la derecha */}
-              {qrStatus === "paid" ? (
-                <div className="bg-emerald-50 p-2.5 flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-lg">verified</span>
-                  </div>
-                  <div className="min-w-0 flex-1 leading-tight">
-                    <p className="font-bold text-emerald-900 text-xs">¡Factura Cancelada por el Cliente!</p>
-                    <p className="font-mono text-emerald-700 text-[10px]">{refNum} • Listo para Cobrar</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-1.5 flex items-center gap-2.5">
-                  {/* QR Image nítido de 98x98px */}
-                  <div className="border border-slate-200 rounded-md p-1 bg-white shrink-0 shadow-xs">
-                    <img 
-                      src={qrUrl} 
-                      alt="Código QR Factura" 
-                      width={98} 
-                      height={98} 
-                      className="block"
-                      onError={(e) => { e.target.style.display = "none"; }} 
-                    />
-                  </div>
-
-                  {/* Info y botones */}
-                  <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5 gap-1.5">
-                    <div>
-                      <p className="font-extrabold text-slate-900 font-mono text-sm leading-none">
-                        ${grandTotal.toFixed(2)} USD
-                      </p>
-                      <p className="text-[9.5px] text-slate-500 mt-1 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
-                        {qrStatus === "waiting" ? "Escuchando pago..." : "Escanea con la cámara"}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        id="btn-open-pay-page"
-                        onClick={() => {
-                          window.open(payPageUrl, "_blank", "width=430,height=820,left=850,top=40");
-                        }}
-                        className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded text-[10.5px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                        title="Abrir factura en formato móvil"
-                      >
-                        <span className="material-symbols-outlined text-xs">smartphone</span> Probar
-                      </button>
-
-                      <button
-                        id="btn-copy-qr-ref"
-                        onClick={() => { 
-                          navigator.clipboard?.writeText(payPageUrl); 
-                          showToast(`Enlace copiado: ${refNum}`, "link"); 
-                        }}
-                        className="p-1 text-slate-400 hover:text-slate-700 rounded hover:bg-slate-100 cursor-pointer"
-                        title="Copiar enlace"
-                      >
-                        <span className="material-symbols-outlined text-xs">content_copy</span>
-                      </button>
-                    </div>
-                  </div>
+              <div className="flex gap-1">
+                <input
+                  type="text"
+                  value={customIpInput}
+                  onChange={(e) => setCustomIpInput(e.target.value)}
+                  placeholder="ej. 192.168.1.5:5000"
+                  className="flex-1 px-1.5 py-0.5 bg-white border border-blue-300 rounded text-[10.5px] font-mono focus:outline-none"
+                  autoFocus
+                />
+                <button type="submit" className="px-2 py-0.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded text-[10px]">
+                  Guardar
+                </button>
+              </div>
+              {detectedIps.length > 0 && (
+                <div className="flex flex-wrap gap-1 items-center">
+                  <span className="text-[9.5px] text-slate-500 font-semibold">Detectadas:</span>
+                  {detectedIps.map((iface) => (
+                    <button
+                      key={iface.address}
+                      type="button"
+                      onClick={() => {
+                        setServerLanUrl(`http://${iface.address}:5000`);
+                        setCustomIpInput(`${iface.address}:5000`);
+                        setIsEditingIp(false);
+                        showToast(`Cambiado a ${iface.name}: ${iface.address}`, "wifi");
+                      }}
+                      className="px-1.5 py-0.2 bg-white hover:bg-blue-100 border border-slate-200 text-slate-700 rounded text-[9px] font-mono"
+                    >
+                      {iface.name}: {iface.address}
+                    </button>
+                  ))}
                 </div>
               )}
+            </form>
+          ) : null}
+
+          {/* Contenido horizontal: QR a la izquierda, acciones a la derecha */}
+          {qrStatus === "paid" ? (
+            <div className="bg-emerald-50 p-2.5 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-lg">verified</span>
+              </div>
+              <div className="min-w-0 flex-1 leading-tight">
+                <p className="font-bold text-emerald-900 text-xs">¡Factura Cancelada por el Cliente!</p>
+                <p className="font-mono text-emerald-700 text-[10px]">{currentRefNum} • Listo para Cobrar</p>
+              </div>
             </div>
-          );
-        })()
+          ) : (
+            <div className="p-1.5 flex items-center gap-2.5">
+              {/* QR Image nítido generado localmente con Canvas */}
+              <div className="border border-slate-200 rounded-md p-1 bg-white shrink-0 shadow-xs flex items-center justify-center min-w-[100px] min-h-[100px]">
+                {qrDataUrl ? (
+                  <img
+                    src={qrDataUrl}
+                    alt="Código QR Factura"
+                    width={98}
+                    height={98}
+                    className="block"
+                  />
+                ) : (
+                  <div className="w-[98px] h-[98px] flex items-center justify-center text-slate-400">
+                    <span className="material-symbols-outlined animate-spin text-lg">sync</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Info y botones */}
+              <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5 gap-1.5">
+                <div>
+                  <p className="font-extrabold text-slate-900 font-mono text-sm leading-none">
+                    {formatCOP(grandTotal)} COP
+                  </p>
+                  <p className="text-[9.5px] text-slate-500 mt-1 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                    {qrStatus === "waiting" ? "Escuchando pago..." : "Escanea con la cámara"}
+                  </p>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <p className="text-[8.5px] text-slate-500 font-mono truncate max-w-[125px]" title={currentPayUrl}>
+                      {serverLanUrl.replace(/^http:\/\//, "")}/pay
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingIp(true)}
+                      className="text-slate-400 hover:text-blue-600 p-0.5 rounded cursor-pointer"
+                      title="Cambiar IP de red local"
+                    >
+                      <span className="material-symbols-outlined text-[11px]">settings</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        refreshNetworkInfo();
+                        showToast("IP de red sincronizada", "sync");
+                      }}
+                      className="text-slate-400 hover:text-blue-600 p-0.5 rounded cursor-pointer"
+                      title="Sincronizar IP de red"
+                    >
+                      <span className="material-symbols-outlined text-[11px]">sync</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    id="btn-open-pay-page"
+                    onClick={() => {
+                      window.open(currentPayUrl, "_blank", "width=430,height=820,left=850,top=40");
+                    }}
+                    className="px-2 py-0.8 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                    title="Abrir factura en formato móvil en el navegador"
+                  >
+                    <span className="material-symbols-outlined text-xs">smartphone</span> Probar
+                  </button>
+
+                  <button
+                    id="btn-copy-qr-ref"
+                    onClick={() => {
+                      navigator.clipboard?.writeText(currentPayUrl);
+                      showToast(`Enlace copiado: ${currentPayUrl}`, "link");
+                    }}
+                    className="p-1 text-slate-400 hover:text-slate-700 rounded hover:bg-slate-100 cursor-pointer"
+                    title="Copiar enlace"
+                  >
+                    <span className="material-symbols-outlined text-xs">content_copy</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Botón principal de cobro */}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
+import { formatCOP } from '../../utils/format';
 import logoImg from '../../assets/img/logo.png';
 
 export const InvoiceDetailModal = () => {
@@ -143,11 +144,11 @@ export const InvoiceDetailModal = () => {
                             {item.codigo && <span className="text-[9px] text-slate-400 font-mono">{item.codigo}</span>}
                           </td>
                           <td className="p-2 text-center font-mono font-semibold">{qty}</td>
-                          <td className="p-2 text-right font-mono text-slate-600">${unit.toFixed(2)}</td>
+                          <td className="p-2 text-right font-mono text-slate-600">{formatCOP(unit)}</td>
                           <td className="p-2 text-right font-mono text-emerald-600 font-semibold">
-                            {desc > 0 ? `-$${desc.toFixed(2)}` : '—'}
+                            {desc > 0 ? `-${formatCOP(desc)}` : '—'}
                           </td>
-                          <td className="p-2 text-right font-mono font-bold text-slate-800">${sub.toFixed(2)}</td>
+                          <td className="p-2 text-right font-mono font-bold text-slate-800">{formatCOP(sub)}</td>
                         </tr>
                       );
                     })
@@ -161,21 +162,21 @@ export const InvoiceDetailModal = () => {
           <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1.5 font-mono text-xs">
             <div className="flex justify-between text-slate-600">
               <span>Subtotal Bruto:</span>
-              <span className="font-semibold">${parseFloat(inv.subtotal || inv.total || 0).toFixed(2)}</span>
+              <span className="font-semibold">{formatCOP(inv.subtotal || inv.total || 0)}</span>
             </div>
             {parseFloat(inv.descuento_total || 0) > 0 && (
               <div className="flex justify-between text-emerald-600 font-semibold">
                 <span>Descuento Total Aplicado:</span>
-                <span>-${parseFloat(inv.descuento_total).toFixed(2)}</span>
+                <span>-{formatCOP(inv.descuento_total)}</span>
               </div>
             )}
             <div className="flex justify-between text-slate-600">
-              <span>Impuesto IGV / IVA (18%):</span>
-              <span>${parseFloat(inv.impuesto || (parseFloat(inv.total) * 0.18 / 1.18) || 0).toFixed(2)}</span>
+              <span>Impuesto IVA (19%):</span>
+              <span>{formatCOP(inv.impuesto || (parseFloat(inv.total) * 0.19 / 1.19) || 0)}</span>
             </div>
             <div className="border-t border-slate-200 pt-1.5 flex justify-between text-sm font-extrabold text-blue-700">
               <span>TOTAL FACTURADO:</span>
-              <span>${parseFloat(inv.total || 0).toFixed(2)}</span>
+              <span>{formatCOP(inv.total || 0)}</span>
             </div>
           </div>
 

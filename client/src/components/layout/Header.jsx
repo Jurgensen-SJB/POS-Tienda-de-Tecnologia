@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
+import { formatCOP } from '../../utils/format';
 import cajeroImg from '../../assets/img/cajero.webp';
 import adminImg from '../../assets/img/admin.webp';
 import superImg from '../../assets/img/super.webp';
@@ -63,7 +64,7 @@ export const Header = () => {
         icon: 'lock_open',
         iconColor: 'bg-emerald-50 text-emerald-600',
         title: 'Caja Operativa',
-        desc: `Turno en curso con fondo de $${parseFloat(caja?.monto_inicial || 500).toFixed(2)}.`,
+        desc: `Turno en curso con fondo de ${formatCOP(caja?.monto_inicial || 200000)}.`,
         time: 'En vivo',
         isStockAlert: false
       }
@@ -200,7 +201,7 @@ export const Header = () => {
                               </div>
                             </div>
                             <div className="text-right">
-                              <span className="font-mono font-bold text-slate-900">${parseFloat(p.precio_venta).toFixed(2)}</span>
+                              <span className="font-mono font-bold text-slate-900">{formatCOP(p.precio_venta)}</span>
                               <span className={`block text-[10px] ${p.stock <= (p.stock_minimo || 5) ? 'text-amber-600 font-bold' : 'text-slate-500'}`}>
                                 Stock: {p.stock}
                               </span>
@@ -235,7 +236,7 @@ export const Header = () => {
                               </div>
                             </div>
                             <div className="text-right">
-                              <span className="font-mono font-bold text-slate-900">${parseFloat(inv.total).toFixed(2)}</span>
+                              <span className="font-mono font-bold text-slate-900">{formatCOP(inv.total)}</span>
                               <span className="block text-[10px] text-slate-400">{inv.metodo || 'Efectivo'}</span>
                             </div>
                           </div>
@@ -310,11 +311,24 @@ export const Header = () => {
         </div>
 
         <button
-          onClick={() => openModal('turno')}
-          className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-full border border-emerald-200 text-[11px] font-semibold whitespace-nowrap transition-colors cursor-pointer"
+          onClick={() => {
+            if (!caja) {
+              openModal('apertura-caja');
+            } else {
+              openModal('turno');
+            }
+          }}
+          className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1 ${
+            caja
+              ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
+              : 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-300'
+          } rounded-full border text-[11px] font-semibold whitespace-nowrap transition-colors cursor-pointer`}
+          title={caja ? 'Ver estado de turno de caja' : 'Clic para realizar Apertura de Caja'}
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          {currentUser ? `Caja 01 · ${currentUser.nombre_completo || currentUser.nombre}` : 'Caja 01 - Turno Mañana'}
+          <span className={`w-1.5 h-1.5 rounded-full ${caja ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`}></span>
+          {caja
+            ? (currentUser ? `Caja 01 · ${currentUser.nombre_completo || currentUser.nombre}` : 'Caja 01 - Turno Abierto')
+            : 'Sin Caja Abierta · Clic para Abrir'}
         </button>
       </div>
 

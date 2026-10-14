@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
+import { formatCOP } from '../../utils/format';
 
 export const CartItem = ({ item }) => {
   const { changeCartQty, removeFromCart, setItemDiscount, products = [] } = useApp();
@@ -52,7 +53,7 @@ export const CartItem = ({ item }) => {
             {item.name}
           </h5>
           <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-0.5">
-            <span className="font-mono">${item.price.toFixed(2)} / ud</span>
+            <span className="font-mono">{formatCOP(item.price)} / ud</span>
             
             {/* Discount trigger button / badge */}
             <button
@@ -95,14 +96,14 @@ export const CartItem = ({ item }) => {
           </button>
         </div>
 
-        <div className="w-16 text-right shrink-0">
+        <div className="min-w-[75px] text-right shrink-0">
           {discountVal > 0 && (
             <div className="text-[9px] line-through text-slate-400 font-mono">
-              ${(item.qty * item.price).toFixed(2)}
+              {formatCOP(item.qty * item.price)}
             </div>
           )}
           <span className="font-mono font-bold text-slate-800 text-xs block">
-            ${itemTotal.toFixed(2)}
+            {formatCOP(itemTotal)}
           </span>
         </div>
 

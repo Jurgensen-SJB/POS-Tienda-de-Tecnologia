@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
+import { formatCOP } from '../../utils/format';
 
 export const NewPurchaseModal = () => {
   const {
@@ -22,7 +23,7 @@ export const NewPurchaseModal = () => {
   const [selectedProduct, setSelectedProduct] = useState(purchaseInitialProduct || null);
   const [selectedProviderId, setSelectedProviderId] = useState('');
   const [cantidad, setCantidad] = useState(10);
-  const [costoUnitario, setCostoUnitario] = useState('100.00');
+  const [costoUnitario, setCostoUnitario] = useState('100000');
   const [observacion, setObservacion] = useState('');
   const [searchProd, setSearchProd] = useState('');
   const [filterMode, setFilterMode] = useState('TODOS'); // 'TODOS' | 'STOCK_BAJO'
@@ -57,8 +58,8 @@ export const NewPurchaseModal = () => {
 
     // Costo sugerido
     const costoSugerido = prod.costo
-      ? parseFloat(prod.costo).toFixed(2)
-      : parseFloat((parseFloat(prod.precio_venta || 100) * 0.65).toFixed(2)).toFixed(2);
+      ? String(Math.round(parseFloat(prod.costo)))
+      : String(Math.round((parseFloat(prod.precio_venta || 100000) * 0.65)));
     setCostoUnitario(costoSugerido);
 
     // Cantidad sugerida según stock actual y mínimo
@@ -318,7 +319,7 @@ export const NewPurchaseModal = () => {
                     <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-0.5">
                       <span>Stock actual: <strong className={currentStock <= (selectedProduct.stock_minimo || 5) ? 'text-amber-600' : 'text-slate-700'}>{currentStock}</strong></span>
                       <span>·</span>
-                      <span>PVP Venta: <strong>${pvp.toFixed(2)}</strong></span>
+                      <span>PVP Venta: <strong>{formatCOP(pvp)}</strong></span>
                     </div>
                   </div>
                 </div>
@@ -432,7 +433,7 @@ export const NewPurchaseModal = () => {
                 {/* Costo Unitario */}
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <label className="font-semibold text-slate-700">Costo Unitario ($)</label>
+                    <label className="font-semibold text-slate-700">Costo Unitario (COP)</label>
                     <span className="text-[10px] text-slate-400">
                       Margen: <strong className="text-emerald-600">{margenEstimado}%</strong>
                     </span>
@@ -441,12 +442,12 @@ export const NewPurchaseModal = () => {
                     <span className="absolute left-2.5 top-1.5 text-slate-400 font-mono text-xs">$</span>
                     <input
                       type="number"
-                      step="0.01"
-                      min="0.01"
+                      step="any"
+                      min="0"
                       value={costoUnitario}
                       onChange={(e) => setCostoUnitario(e.target.value)}
                       className="w-full pl-6 pr-3 py-1.5 bg-white border border-slate-300 rounded-lg font-mono font-bold text-xs focus:ring-1 focus:ring-blue-600 focus:outline-none"
-                      placeholder="0.00"
+                      placeholder="100000"
                       required
                     />
                   </div>
@@ -473,12 +474,12 @@ export const NewPurchaseModal = () => {
                 <div>
                   <span className="text-[11px] font-semibold text-blue-900 block">Total a Pagar al Proveedor</span>
                   <span className="text-[10px] text-blue-700">
-                    {cantNum} unidades × ${costoNum.toFixed(2)} c/u
+                    {cantNum} unidades × {formatCOP(costoNum)} c/u
                   </span>
                 </div>
                 <div className="text-right">
                   <span className="text-lg font-mono font-black text-blue-800">
-                    ${totalCalculado.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatCOP(totalCalculado)}
                   </span>
                 </div>
               </div>

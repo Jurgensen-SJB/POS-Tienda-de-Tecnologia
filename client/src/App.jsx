@@ -47,6 +47,7 @@ import { PaymentMethodsModal } from './components/modals/PaymentMethodsModal';
 import { CorteXModal } from './components/modals/CorteXModal';
 import { CierreZModal } from './components/modals/CierreZModal';
 import { NewPurchaseModal } from './components/modals/NewPurchaseModal';
+import { AperturaCajaModal } from './components/modals/AperturaCajaModal';
 
 export function AppContent() {
   const { currentView, currentUser, hasPermiso } = useApp();
@@ -156,6 +157,7 @@ export function AppContent() {
       <CorteXModal />
       <CierreZModal />
       <NewPurchaseModal />
+      <AperturaCajaModal />
     </div>
   );
 }

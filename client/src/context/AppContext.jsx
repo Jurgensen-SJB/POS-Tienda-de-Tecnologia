@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { api } from '../api/api';
 
 const AppContext = createContext();
@@ -63,7 +63,32 @@ export const AppProvider = ({ children }) => {
   const isAdmin = currentUser ? Boolean(currentUser.rol?.toLowerCase().includes('admin')) : false;
   const hasPermiso = (nombre) => isAdmin || userPermisos.includes(nombre);
 
+  // Track whether we already prompted for caja in this session
+  const hasPromptedCajaRef = useRef(false);
+
+  // After login or startup, check if caja is open and prompt apertura if needed
+  const checkCajaAndPrompt = async () => {
+    try {
+      const cajaData = await api.getCajaActual();
+      if (cajaData && cajaData.estado === 'ABIERTA' && cajaData.id_caja) {
+        setCaja(cajaData);
+        // Caja already open, no prompt needed
+        return;
+      }
+      // No open caja → set null and prompt apertura modal
+      setCaja(null);
+      hasPromptedCajaRef.current = true;
+      setActiveModal('apertura-caja');
+    } catch {
+      // If we can't check, prompt apertura to be safe
+      setCaja(null);
+      hasPromptedCajaRef.current = true;
+      setActiveModal('apertura-caja');
+    }
+  };
+
   const login = async (identifier, password) => {
+    hasPromptedCajaRef.current = false;
     try {
       const user = await api.login(identifier, password);
       setCurrentUser(user);
@@ -73,6 +98,8 @@ export const AppProvider = ({ children }) => {
       api.getAllPermisos().then(list => setAllPermisos(list)).catch(() => {});
       showToast(`¡Bienvenido/a, ${user.nombre_completo || user.nombre}!`, 'verified_user');
       setCurrentView('pos');
+      // Check if caja needs to be opened
+      checkCajaAndPrompt();
       return { success: true };
     } catch (err) {
       // Si el error viene del servidor (mensaje definido), mostrarlo sin intentar fallback local
@@ -152,6 +179,8 @@ export const AppProvider = ({ children }) => {
         api.getAllPermisos().then(list => setAllPermisos(list)).catch(() => {});
         showToast(`¡Bienvenido/a, ${match.user.nombre_completo}!`, 'verified_user');
         setCurrentView('pos');
+        // Check if caja needs to be opened
+        checkCajaAndPrompt();
         return { success: true };
       }
 
@@ -164,6 +193,7 @@ export const AppProvider = ({ children }) => {
   const logout = () => {
     setCurrentUser(null);
     setUserPermisos([]);
+    hasPromptedCajaRef.current = false;
     showToast('Sesión cerrada correctamente', 'logout');
   };
 
@@ -229,7 +259,11 @@ export const AppProvider = ({ children }) => {
         setInvoices(salesData);
         setTicketCounter(892 + salesData.length);
       }
-      if (cajaData) setCaja(cajaData);
+      if (cajaData && cajaData.estado === 'ABIERTA') {
+        setCaja(cajaData);
+      } else {
+        setCaja(null);
+      }
       if (provsData.length) setProviders(provsData);
       if (purchasesData.length) setPurchases(purchasesData);
       if (paymentMethodsData.length) setPaymentMethods(paymentMethodsData);
@@ -243,6 +277,14 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     loadData();
   }, []);
+
+  // When app loads with saved session, check if caja needs to be opened
+  useEffect(() => {
+    if (currentUser && !loading && !caja && !hasPromptedCajaRef.current) {
+      hasPromptedCajaRef.current = true;
+      checkCajaAndPrompt();
+    }
+  }, [currentUser, loading, caja]);
 
   // Cart Management with strict stock limits
   const addToCart = (product, qty = 1) => {
@@ -385,7 +427,7 @@ export const AppProvider = ({ children }) => {
   const saleDiscountAmount = subtotalAfterItemDiscounts * (discountPct / 100);
   const discountAmount = itemDiscountsTotal + saleDiscountAmount;
   const taxableBase = Math.max(0, grossSubtotal - discountAmount);
-  const tax = taxableBase * 0.18;
+  const tax = taxableBase * 0.19;
   const grandTotal = Math.max(0, taxableBase + tax);
   const totalUnits = cart.reduce((acc, item) => acc + item.qty, 0);
 
@@ -975,6 +1017,7 @@ export const AppProvider = ({ children }) => {
     setEmployees,
     invoices,
     caja,
+    setCaja,
     providers,
     purchases,
     setPurchases,

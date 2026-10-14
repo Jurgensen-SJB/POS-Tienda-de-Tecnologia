@@ -59,6 +59,6 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: err.message || 'Error interno del servidor' });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 NexPOS Server running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 NexPOS Server running on http://0.0.0.0:${PORT}`);
 });

@@ -110,11 +110,14 @@ router.get('/actual', async (req, res) => {
         turno: 'Mañana (08:00 - 16:00)'
       });
     }
-    res.json(cajaActual);
+    // No open caja in DB → return null so frontend can prompt apertura
+    res.json(null);
   } catch (err) {
+    // DB unreachable → use fallback so the app still works offline
     res.json(cajaActual);
   }
 });
+
 
 // 3. POST /api/cajas/apertura - Registrar apertura de caja
 router.post('/apertura', async (req, res) => {

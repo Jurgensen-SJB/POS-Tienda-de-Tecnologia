@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { NewPurchaseModal } from '../modals/NewPurchaseModal';
+import { formatCOP } from '../../utils/format';
 
 export const ComprasView = () => {
   const { purchases = [], providers = [], openPurchaseModal, showToast } = useApp();
@@ -197,10 +198,10 @@ export const ComprasView = () => {
                         </span>
                       </td>
                       <td className="p-3 text-right font-mono text-slate-600 font-semibold">
-                        ${parseFloat(ord.subtotal || ord.total || 0).toFixed(2)}
+                        {formatCOP(ord.subtotal || ord.total || 0)}
                       </td>
                       <td className="p-3 text-right font-mono font-extrabold text-blue-700 text-sm">
-                        ${parseFloat(ord.total || 0).toFixed(2)}
+                        {formatCOP(ord.total || 0)}
                       </td>
                       <td className="p-3 text-center">
                         <span
@@ -278,7 +279,7 @@ export const ComprasView = () => {
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center justify-between">
                 <span className="font-bold text-blue-900 text-xs">Monto Total de Compra:</span>
                 <span className="text-base font-mono font-extrabold text-blue-900">
-                  ${parseFloat(selectedPurchase.total || 0).toFixed(2)}
+                  {formatCOP(selectedPurchase.total || 0)}
                 </span>
               </div>
 
