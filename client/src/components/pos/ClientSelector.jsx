@@ -7,9 +7,9 @@ export const ClientSelector = () => {
   const isDefault = currentClient.name === 'Consumidor Final';
 
   return (
-    <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between shrink-0">
+    <div className="bg-white p-2.5 rounded-xl border border-green-200 shadow-xs flex items-center justify-between shrink-0">
       <div className="flex items-center gap-2.5 min-w-0 flex-1">
-        <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm shrink-0">
+        <div className="w-8 h-8 rounded-lg bg-blue-50 text-red-600 flex items-center justify-center font-bold text-sm shrink-0">
           <span className="material-symbols-outlined text-base">person</span>
         </div>
         <div className="min-w-0 flex-1 leading-tight">

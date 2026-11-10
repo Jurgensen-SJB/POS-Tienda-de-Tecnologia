@@ -129,7 +129,7 @@ export const AuditoriaView = () => {
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <span className="material-symbols-outlined text-blue-600">history_toggle_off</span>
+              <span className="material-symbols-outlined text-red-600">history_toggle_off</span>
               Auditoría y Bitácora de Operaciones (registro_operaciones)
             </h2>
             <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200 flex items-center gap-1">

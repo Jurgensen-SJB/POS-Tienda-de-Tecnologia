@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import logoImg from '../../assets/img/logo.png';
 import fondoPOS from '../../assets/img/fondoPOS.png';
+import cajero from '../../assets/img/cajero.webp';
 
 export const LoginView = () => {
   const { login } = useApp();

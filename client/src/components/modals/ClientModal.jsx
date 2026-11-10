@@ -51,7 +51,7 @@ export const ClientModal = () => {
           {/* Default: Consumidor Final */}
           <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 rounded-lg bg-red-600 text-white flex items-center justify-center shrink-0">
                 <span className="material-symbols-outlined text-base">person_off</span>
               </div>
               <div>
