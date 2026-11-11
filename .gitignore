@@ -31,3 +31,7 @@ server/.env
 server/.env.*
 !server/.env.example
 
+# SQLite temporary WAL files
+*.sqlite-shm
+*.sqlite-wal
+
