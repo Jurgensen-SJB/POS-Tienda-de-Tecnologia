@@ -100,6 +100,10 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: err.message || 'Error interno del servidor' });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 NexPOS Server running on http://0.0.0.0:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 NexPOS Server running on http://0.0.0.0:${PORT}`);
+  });
+}
+
+module.exports = app;
