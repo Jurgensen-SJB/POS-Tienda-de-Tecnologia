@@ -51,6 +51,13 @@ db.function('to_char', (val, format) => {
 
 db.function('now', () => new Date().toISOString());
 
+db.function('split_part', (str, delimiter, pos) => {
+  if (!str) return '';
+  const parts = String(str).split(delimiter);
+  const idx = parseInt(pos, 10) - 1;
+  return parts[idx] || '';
+});
+
 // 2. Adaptador de SQL (traducción transparente de sintaxis PostgreSQL a SQLite)
 function adaptSqlAndParams(sql, params = []) {
   const orderedParams = [];

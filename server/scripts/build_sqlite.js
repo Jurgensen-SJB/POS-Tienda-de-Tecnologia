@@ -329,3 +329,4 @@ migrateDataFromPostgres().catch(err => {
   console.error('Error durante la migración:', err);
   process.exit(1);
 });
+
