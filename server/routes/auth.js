@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db/pool');
 const { employees } = require('../db/fallbackData');
+const { buildVerificationUrl } = require('../utils/mailer');
 
 // Permisos por rol (fallback)
 const ROL_PERMISOS_FALLBACK = {
@@ -60,6 +61,8 @@ function getUnifiedAccounts() {
       rol,
       cargo: emp.cargo || rol,
       estado: emp.estado || 'ACTIVO',
+      correo_verificado: emp.correo_verificado !== undefined ? Boolean(emp.correo_verificado) : true,
+      token_verificacion: emp.token_verificacion || null,
       avatar: AVATARS[emp.id_empleado] || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80',
       permisos: ROL_PERMISOS_FALLBACK[rolKey] || ROL_PERMISOS_FALLBACK.cajero
     };
@@ -89,6 +92,8 @@ router.post('/login', async (req, res) => {
         e.apellidos,
         e.correo,
         e.cargo,
+        e.correo_verificado,
+        e.token_verificacion,
         e.estado AS empleado_estado,
         r.nombre AS rol_nombre
       FROM usuarios u
@@ -112,6 +117,17 @@ router.post('/login', async (req, res) => {
         return res.status(403).json({ 
           error: 'Cuenta inactiva. Tu usuario ha sido desactivado. Contacta al administrador del sistema.',
           codigo: 'USUARIO_INACTIVO'
+        });
+      }
+
+      // Verificar si el correo electrónico ya fue confirmado
+      if (user.correo_verificado === false) {
+        return res.status(403).json({
+          error: `Tu correo electrónico (${user.correo}) aún no ha sido verificado. Haz clic en el enlace de confirmación enviado a tu correo para activar tu acceso.`,
+          codigo: 'CORREO_NO_VERIFICADO',
+          id_empleado: user.id_empleado,
+          correo: user.correo,
+          verificationUrl: user.token_verificacion ? buildVerificationUrl('empleado', user.token_verificacion) : null
         });
       }
 
@@ -168,6 +184,16 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({ 
         error: 'Cuenta inactiva. Tu usuario ha sido desactivado. Contacta al administrador del sistema.',
         codigo: 'USUARIO_INACTIVO'
+      });
+    }
+
+    if (account.correo_verificado === false) {
+      return res.status(403).json({
+        error: `Tu correo electrónico (${account.correo}) aún no ha sido verificado. Haz clic en el enlace de confirmación enviado a tu correo para activar tu acceso.`,
+        codigo: 'CORREO_NO_VERIFICADO',
+        id_empleado: account.id_empleado,
+        correo: account.correo,
+        verificationUrl: account.token_verificacion ? buildVerificationUrl('empleado', account.token_verificacion) : null
       });
     }
 

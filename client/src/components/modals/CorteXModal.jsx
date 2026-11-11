@@ -18,15 +18,15 @@ export const CorteXModal = () => {
       const adminCheck = Boolean(currentUser?.rol?.toLowerCase().includes('admin'));
       setSelectedCajeroId(adminCheck ? 'TODOS' : (currentUser?.id_usuario || 3));
     }
-  }, [activeModal, currentUser?.id_usuario]);
+  }, [activeModal, currentUser?.id_usuario, currentUser?.rol]);
 
   if (activeModal !== 'corte-x') return null;
 
   const cajerosList = [
-    { id: 'TODOS', nombre: 'Consolidado General (Toda la Tienda)', cargo: 'Auditoría General', doc: 'RUC-20489182391' },
-    { id: 3, nombre: 'Camila Valenzuela', cargo: 'Cajera Turno Mañana', doc: 'DNI-74829103' },
-    { id: 2, nombre: 'Rodrigo Alarcón', cargo: 'Supervisor de Caja', doc: 'DNI-45920193' },
-    { id: 1, nombre: 'Elena Morales', cargo: 'Administradora General', doc: 'DNI-10293847' }
+    { id: 'TODOS', nombre: 'Consolidado General (Toda la Tienda)', cargo: 'Auditoría General', doc: 'NIT-901489182-3' },
+    { id: 3, nombre: 'Camila Valenzuela', cargo: 'Cajera Turno Mañana', doc: 'CC-10203042' },
+    { id: 2, nombre: 'Rodrigo Alarcón', cargo: 'Supervisor de Caja', doc: 'CC-10203041' },
+    { id: 1, nombre: 'Elena Morales', cargo: 'Administradora General', doc: 'CC-10203040' }
   ];
 
   if (currentUser && !cajerosList.some(c => c.id === currentUser.id_usuario)) {
@@ -140,9 +140,9 @@ export const CorteXModal = () => {
             style={{ maxWidth: '300px' }}
           >
             <div className="text-center space-y-1 pb-3 border-b border-dashed border-slate-400">
-              <div className="font-bold text-sm tracking-tight">NEXPOS TECNOLOGÍA S.A.C.</div>
-              <div className="text-[10px]">RUC: 20489182391</div>
-              <div className="text-[10px]">Av. República de Panamá 3545, Lima</div>
+              <div className="font-bold text-sm tracking-tight">NEXPOS TECNOLOGÍA S.A.S.</div>
+              <div className="text-[10px]">NIT: 901.489.182-3</div>
+              <div className="text-[10px]">Calle 93A #11-28, Bogotá D.C.</div>
               <div className="text-[10px] font-bold mt-2 uppercase border border-slate-700 py-0.5 px-2 inline-block">
                 ★ {isConsolidated ? 'CORTE X CONSOLIDADO' : 'CORTE X PARCIAL CAJERO'} ★
               </div>

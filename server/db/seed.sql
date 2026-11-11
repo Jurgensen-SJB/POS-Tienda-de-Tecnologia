@@ -5,14 +5,14 @@
 
 -- 1. PROVEEDORES
 INSERT INTO proveedores (id_proveedor, nombre, identificacion, telefono, correo, direccion, estado) VALUES
-  (1, "TechDistributor International Inc.", "RUC-20601234567", "+51-998877665", "ventas@techdistributor.com", "", "ACTIVO"),
-  (2, "NexCore Hardware Mayorista S.A.", "RUC-20519876543", "+51-997766554", "pedidos@nexcorehw.com", "Cúcuta", "ACTIVO"),
-  (3, "Apple Latinoamerica SA", "RUC-20612345678", "+51-991122334", "distribuidores@apple.com", "Av. Corrientes 550, Buenos Aires", "INACTIVO"),
-  (4, "Samsung Electronics Peru", "RUC-20734567890", "+51-992233445", "b2b@samsung.com.pe", "Av. La Marina 2000, Lima", "ACTIVO"),
-  (5, "Logitech Distribuciones", "RUC-20845678901", "+51-993344556", "ventas@logitech-latam.com", "Calle 93A 11-28, Bogota", "ACTIVO"),
-  (6, "Kingston Technology LATAM", "RUC-20956789012", "+51-994455667", "ventas@kingston.com.pe", "Av. Petit Thouars 3501, Lima", "ACTIVO"),
-  (7, "ASUS ROG Technologies SAC", "RUC-20998877665", "+51-998800112", "soporte@asus-latam.com", "Av. Javier Prado Este 4200, Lima", "ACTIVO"),
-  (8, "MSI Gaming Latam", "RUC-20456789123", "+51-998811223", "ventas@msi.com", "Av. Canaval y Moreyra 450, San Isidro", "ACTIVO")
+  (1, 'TechDistributor Colombia S.A.S.', 'NIT-900601234-5', '+57 310 998 8776', 'ventas@techdistributor.co', 'Av. El Dorado #68B-85, Bogotá D.C.', 'ACTIVO'),
+  (2, 'NexCore Hardware Mayorista S.A.S.', 'NIT-900519876-4', '+57 311 997 7665', 'pedidos@nexcorehw.co', 'Av. Libertadores #15-40, Cúcuta', 'ACTIVO'),
+  (3, 'Apple Colombia S.A.S.', 'NIT-900612345-6', '+57 312 991 1223', 'distribuidores@apple.co', 'Cra. 11 #82-01, Bogotá D.C.', 'INACTIVO'),
+  (4, 'Samsung Electronics Colombia S.A.', 'NIT-830028931-5', '+57 314 992 2334', 'b2b@samsung.com.co', 'Cra. 7 #113-43, Bogotá D.C.', 'ACTIVO'),
+  (5, 'Logitech Distribuciones Colombia', 'NIT-900845678-9', '+57 315 993 3445', 'ventas@logitech-latam.com', 'Calle 93A #11-28, Bogotá D.C.', 'ACTIVO'),
+  (6, 'Kingston Technology Colombia', 'NIT-900956789-0', '+57 316 994 4556', 'ventas@kingston.com.co', 'Cra. 43A #1-50, El Poblado, Medellín', 'ACTIVO'),
+  (7, 'ASUS ROG Technologies Colombia S.A.S.', 'NIT-900998877-6', '+57 317 998 8001', 'soporte@asus-colombia.com', 'Av. 6N #28N-102, Cali', 'ACTIVO'),
+  (8, 'MSI Gaming Colombia S.A.S.', 'NIT-900456789-1', '+57 318 998 8112', 'ventas@msi.com.co', 'Cra. 51B #80-58, Barranquilla', 'ACTIVO')
 ON CONFLICT (id_proveedor) DO UPDATE SET nombre = EXCLUDED.nombre, identificacion = EXCLUDED.identificacion;
 SELECT setval('proveedores_id_proveedor_seq', (SELECT MAX(id_proveedor) FROM proveedores));
 
@@ -88,13 +88,12 @@ INSERT INTO inventario (id_producto, cantidad_actual) VALUES
 ON CONFLICT (id_producto) DO UPDATE SET cantidad_actual = EXCLUDED.cantidad_actual;
 
 -- 5. CLIENTES
-INSERT INTO clientes (id_cliente, tipo_identificacion, numero_identificacion, nombres, apellidos, telefono, correo, direccion, estado) VALUES
-  (1, "GENERAL", "0000000000", "Consumidor", "Final", "-", "-", "", "ACTIVO"),
-  (2, "DNI", "47891234", "Carlos", "Mendoza Ruiz", "+51 987 654 321", "carlos.mendoza@email.com", "", "ACTIVO"),
-  (3, "RUC", "20556677889", "TechCorp", "Perú S.A.C.", "+51 1 456 7890", "compras@techcorp.pe", "", "ACTIVO"),
-  (4, "DNI", "2345678", "Nuevo Cliente", "", "", "", "", "ACTIVO"),
-  (5, "DNI", "33333", "Juan", "", "", "", "", "ACTIVO"),
-  (6, "DNI", "23456", "Camila Perez", "", "", "", "", "ACTIVO")
-ON CONFLICT (id_cliente) DO UPDATE SET nombres = EXCLUDED.nombres;
+INSERT INTO clientes (id_cliente, tipo_identificacion, numero_identificacion, nombres, apellidos, telefono, correo, direccion, correo_verificado, estado) VALUES
+  (2, 'CC', '1020478912', 'Carlos', 'Mendoza Ruiz', '+57 300 654 3210', 'carlos.mendoza@email.com', 'Cra. 7 #72-41, Chapinero, Bogotá D.C.', TRUE, 'ACTIVO'),
+  (3, 'NIT', '900556677-8', 'TechCorp', 'Colombia S.A.S.', '+57 601 456 7890', 'compras@techcorp.co', 'Calle 100 #19-61, Usaquén, Bogotá D.C.', TRUE, 'ACTIVO'),
+  (4, 'CC', '1032345678', 'Valentina', 'Torres', '+57 300 456 7890', 'valentina.torres@email.com', 'Cra 15 #88-20, Bogotá D.C.', TRUE, 'ACTIVO'),
+  (5, 'CC', '1015433333', 'Juan', 'Gómez', '+57 310 555 1234', 'juan.gomez@email.com', 'Calle 72 #10-34, Bogotá D.C.', FALSE, 'ACTIVO'),
+  (6, 'CC', '1098723456', 'Camila', 'Pérez', '+57 315 888 9900', 'camila.perez@email.com', 'Av. El Dorado #68, Bogotá D.C.', TRUE, 'ACTIVO')
+ON CONFLICT (id_cliente) DO UPDATE SET nombres = EXCLUDED.nombres, correo = EXCLUDED.correo, correo_verificado = EXCLUDED.correo_verificado;
 SELECT setval('clientes_id_cliente_seq', (SELECT MAX(id_cliente) FROM clientes));
 

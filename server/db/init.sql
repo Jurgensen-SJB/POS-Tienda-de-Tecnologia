@@ -77,8 +77,11 @@ CREATE TABLE IF NOT EXISTS clientes (
     nombres VARCHAR(100) NOT NULL,
     apellidos VARCHAR(100),
     telefono VARCHAR(30),
-    correo VARCHAR(150),
+    correo VARCHAR(150) NOT NULL,
     direccion VARCHAR(200),
+    correo_verificado BOOLEAN NOT NULL DEFAULT FALSE,
+    token_verificacion VARCHAR(120) NULL,
+    fecha_verificacion TIMESTAMP NULL,
     estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO'
         CHECK (estado IN ('ACTIVO', 'INACTIVO')),
     fecha_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -96,11 +99,15 @@ CREATE TABLE IF NOT EXISTS empleados (
     nombres VARCHAR(100) NOT NULL,
     apellidos VARCHAR(100) NOT NULL,
     telefono VARCHAR(30),
-    correo VARCHAR(150),
+    correo VARCHAR(150) NOT NULL,
     cargo VARCHAR(100),
+    correo_verificado BOOLEAN NOT NULL DEFAULT FALSE,
+    token_verificacion VARCHAR(120) NULL,
+    fecha_verificacion TIMESTAMP NULL,
     estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO'
         CHECK (estado IN ('ACTIVO', 'INACTIVO')),
     fecha_ingreso DATE NOT NULL,
+    fecha_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_empleado_identificacion UNIQUE (numero_identificacion)
 );
 
@@ -219,7 +226,7 @@ CREATE TABLE IF NOT EXISTS cajas (
 -- =====================================================
 CREATE TABLE IF NOT EXISTS ventas (
     id_venta SERIAL PRIMARY KEY,
-    id_cliente INT NULL,
+    id_cliente INT NOT NULL,
     id_usuario INT NOT NULL,
     id_caja INT NOT NULL,
     fecha_venta TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

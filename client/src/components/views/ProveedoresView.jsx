@@ -71,12 +71,12 @@ const NewProviderModal = ({ onClose, onSaved }) => {
 
           <div className="grid grid-cols-2 gap-2.5">
             <div>
-              <label className="font-semibold text-slate-700 block mb-1">RUC / Identificación Fiscal</label>
+              <label className="font-semibold text-slate-700 block mb-1">NIT / Identificación Fiscal</label>
               <input
                 name="identificacion"
                 value={form.identificacion}
                 onChange={handleChange}
-                placeholder="RUC-20XXXXXXXXX"
+                placeholder="NIT-900123456-7"
                 className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono focus:bg-white focus:ring-1 focus:ring-blue-600 focus:outline-none"
               />
             </div>
@@ -86,7 +86,7 @@ const NewProviderModal = ({ onClose, onSaved }) => {
                 name="telefono"
                 value={form.telefono}
                 onChange={handleChange}
-                placeholder="+51-9XXXXXXXX"
+                placeholder="+57 300 000 0000"
                 className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:bg-white focus:ring-1 focus:ring-blue-600 focus:outline-none"
               />
             </div>
@@ -219,7 +219,7 @@ const EditProviderModal = ({ provider, onClose, onSaved }) => {
 
           <div className="grid grid-cols-2 gap-2.5">
             <div>
-              <label className="font-semibold text-slate-700 block mb-1">RUC / Identificación Fiscal</label>
+              <label className="font-semibold text-slate-700 block mb-1">NIT / Identificación Fiscal</label>
               <input
                 name="identificacion"
                 value={form.identificacion}
@@ -336,7 +336,7 @@ const ProviderDetailModal = ({ provider, onClose, onEdit, onToggle }) => {
                 <span className="text-slate-400 text-[10px] font-mono">ID #{provider.id_proveedor}</span>
               </div>
               <h4 className="font-bold text-slate-900 text-sm truncate">{provider.nombre}</h4>
-              <p className="text-slate-500 text-[11px] font-mono">{provider.identificacion || 'Sin RUC registrado'}</p>
+              <p className="text-slate-500 text-[11px] font-mono">{provider.identificacion || 'Sin NIT registrado'}</p>
             </div>
           </div>
 
@@ -442,7 +442,7 @@ const DeactivateProviderModal = ({ provider, onClose, onConfirm }) => {
               ¿{actionText} proveedor?
             </h3>
             <p className="text-[11px] text-slate-400">
-              #{provider.id_proveedor} - {provider.identificacion || 'Sin RUC'}
+              #{provider.id_proveedor} - {provider.identificacion || 'Sin NIT'}
             </p>
           </div>
         </div>
@@ -610,7 +610,7 @@ export const ProveedoresView = () => {
           <input
             type="text"
             id="provider-search"
-            placeholder="Buscar por nombre, razón social, RUC o correo..."
+            placeholder="Buscar por nombre, razón social, NIT o correo..."
             className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:bg-white focus:border-slate-400 focus:outline-none transition-colors shadow-xs"
             value={tableSearch}
             onChange={(e) => setTableSearch(e.target.value)}
@@ -666,7 +666,7 @@ export const ProveedoresView = () => {
               <thead className="sticky top-0 bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 z-10 shadow-xs">
                 <tr>
                   <th className="py-2.5 px-3">Proveedor / Razón Social</th>
-                  <th className="py-2.5 px-3">RUC / Identificación</th>
+                  <th className="py-2.5 px-3">NIT / Identificación</th>
                   <th className="py-2.5 px-3">Teléfono</th>
                   <th className="py-2.5 px-3">Correo</th>
                   <th className="py-2.5 px-3">Dirección</th>
@@ -767,7 +767,7 @@ export const ProveedoresView = () => {
                               {prov.nombre}
                             </h4>
                             <span className="text-[10px] font-mono text-slate-400">
-                              {prov.identificacion || 'Sin RUC'}
+                              {prov.identificacion || 'Sin NIT'}
                             </span>
                           </div>
                         </div>

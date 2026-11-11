@@ -27,7 +27,6 @@ export const Header = () => {
     providers = [],
     invoices = [],
     openInvoiceModal,
-    addToCart,
     openPurchaseModal
   } = useApp();
 

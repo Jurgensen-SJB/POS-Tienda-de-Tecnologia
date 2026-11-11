@@ -42,6 +42,7 @@ import { NewClientModal } from './components/modals/NewClientModal';
 import { ClientDetailModal } from './components/modals/ClientDetailModal';
 import { EditClientModal } from './components/modals/EditClientModal';
 import { DeactivateClientModal } from './components/modals/DeactivateClientModal';
+import { DeleteClientModal } from './components/modals/DeleteClientModal';
 import { InvoiceDetailModal } from './components/modals/InvoiceDetailModal';
 import { PaymentMethodsModal } from './components/modals/PaymentMethodsModal';
 import { CorteXModal } from './components/modals/CorteXModal';
@@ -152,6 +153,7 @@ export function AppContent() {
       <ClientDetailModal />
       <EditClientModal />
       <DeactivateClientModal />
+      <DeleteClientModal />
       <InvoiceDetailModal />
       <PaymentMethodsModal />
       <CorteXModal />

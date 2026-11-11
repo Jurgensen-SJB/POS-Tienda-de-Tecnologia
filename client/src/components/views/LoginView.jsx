@@ -4,7 +4,7 @@ import logoImg from '../../assets/img/logo.png';
 import fondoPOS from '../../assets/img/fondoPOS.png';
 
 export const LoginView = () => {
-  const { login } = useApp();
+  const { login, resendVerification } = useApp();
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -12,25 +12,41 @@ export const LoginView = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isInactiveError, setIsInactiveError] = useState(false);
+  const [unverifiedInfo, setUnverifiedInfo] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!identifier.trim() || !password) {
       setErrorMessage('Por favor ingresa tu usuario/correo y contraseña');
       setIsInactiveError(false);
+      setUnverifiedInfo(null);
       return;
     }
 
     setErrorMessage('');
     setIsInactiveError(false);
+    setUnverifiedInfo(null);
     setIsLoading(true);
     const res = await login(identifier.trim(), password);
     setIsLoading(false);
 
     if (!res.success) {
-      const inactive = res.error?.includes('inactiva') || res.error?.includes('desactivado') || res.error?.includes('INACTIVO');
-      setIsInactiveError(inactive);
-      setErrorMessage(res.error || 'Credenciales inválidas');
+      if (res.codigo === 'CORREO_NO_VERIFICADO') {
+        setUnverifiedInfo({
+          id_empleado: res.id_empleado,
+          correo: res.correo,
+          verificationUrl: res.verificationUrl,
+          message: res.error
+        });
+      } else {
+        const inactive =
+          res.codigo === 'USUARIO_INACTIVO' ||
+          res.error?.includes('inactiva') ||
+          res.error?.includes('desactivado') ||
+          res.error?.includes('INACTIVO');
+        setIsInactiveError(inactive);
+        setErrorMessage(res.error || 'Credenciales inválidas');
+      }
     }
   };
 
@@ -56,6 +72,45 @@ export const LoginView = () => {
 
         {/* Login Form */}
         <form className="p-6 space-y-4 text-xs" onSubmit={handleSubmit}>
+          {unverifiedInfo && (
+            <div className="p-3.5 bg-blue-50 border border-blue-300 text-blue-900 rounded-xl text-xs space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-blue-600 text-lg shrink-0">mark_email_unread</span>
+                <span className="font-bold text-blue-900">Verificación de Correo Pendiente</span>
+              </div>
+              <p className="text-blue-800 font-normal text-[11px] leading-snug pl-7">
+                {unverifiedInfo.message}
+              </p>
+              <div className="flex flex-wrap gap-1.5 pl-7 pt-1">
+                {unverifiedInfo.verificationUrl && (
+                  <button
+                    type="button"
+                    onClick={() => window.open(unverifiedInfo.verificationUrl, '_blank')}
+                    className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-xs">open_in_new</span>
+                    Confirmar mi Correo
+                  </button>
+                )}
+                {unverifiedInfo.id_empleado && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const r = await resendVerification('empleado', unverifiedInfo.id_empleado);
+                      if (r?.verificationUrl) {
+                        setUnverifiedInfo(prev => ({ ...prev, verificationUrl: r.verificationUrl }));
+                      }
+                    }}
+                    className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg font-semibold text-[11px] flex items-center gap-1 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-xs">forward_to_inbox</span>
+                    Reenviar Enlace
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {errorMessage && (
             isInactiveError ? (
               /* Banner especial para usuario inactivo */

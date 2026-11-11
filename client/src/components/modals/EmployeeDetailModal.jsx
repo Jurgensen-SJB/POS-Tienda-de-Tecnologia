@@ -104,8 +104,9 @@ export const EmployeeDetailModal = () => {
           {/* Datos */}
           <div className="space-y-1.5 text-xs">
             {[
-              ['Documento', `${employeeDetail.tipo_identificacion || 'DNI'}: ${employeeDetail.numero_identificacion || '—'}`],
+              ['Documento', `${employeeDetail.tipo_identificacion || 'CC'}: ${employeeDetail.numero_identificacion || '—'}`],
               ['Correo', employeeDetail.correo || '—'],
+              ['Verificación de correo', employeeDetail.correo_verificado !== false ? 'Verificado ✓' : 'Pendiente de verificación'],
               ['Teléfono', employeeDetail.telefono || '—'],
               ['Usuario de acceso', employeeDetail.nombre_usuario || '—'],
               ['Fecha de ingreso', employeeDetail.fecha_ingreso ? String(employeeDetail.fecha_ingreso).split('T')[0] : '—'],

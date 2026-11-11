@@ -4,7 +4,7 @@ import { useApp } from '../../context/AppContext';
 export const EditClientModal = () => {
   const { activeModal, closeModal, clientToEdit, saveEditedClient, showToast } = useApp();
 
-  const [tipoDoc, setTipoDoc] = useState('DNI');
+  const [tipoDoc, setTipoDoc] = useState('CC');
   const [numDoc, setNumDoc] = useState('');
   const [nombres, setNombres] = useState('');
   const [apellidos, setApellidos] = useState('');
@@ -16,7 +16,8 @@ export const EditClientModal = () => {
 
   useEffect(() => {
     if (clientToEdit) {
-      setTipoDoc(clientToEdit.tipo_identificacion || 'DNI');
+      const rawTipo = clientToEdit.tipo_identificacion || 'CC';
+      setTipoDoc(rawTipo === 'DNI' ? 'CC' : rawTipo === 'RUC' ? 'NIT' : rawTipo);
       setNumDoc(clientToEdit.numero_identificacion || '');
       setNombres(clientToEdit.nombres || '');
       setApellidos(clientToEdit.apellidos || '');
@@ -33,6 +34,10 @@ export const EditClientModal = () => {
     e.preventDefault();
     if (!numDoc.trim() || !nombres.trim()) {
       showToast('Número de documento y nombres son obligatorios', 'warning');
+      return;
+    }
+    if (!correo.trim() || !correo.includes('@')) {
+      showToast('El correo electrónico válido es obligatorio', 'warning');
       return;
     }
 
@@ -90,11 +95,12 @@ export const EditClientModal = () => {
                 onChange={(e) => setTipoDoc(e.target.value)}
                 className={inputCls}
               >
-                <option value="DNI">DNI</option>
-                <option value="RUC">RUC</option>
-                <option value="CE">C.E.</option>
+                <option value="CC">CC (Cédula de Ciudadanía)</option>
+                <option value="NIT">NIT</option>
+                <option value="CE">CE (Cédula de Extranjería)</option>
+                <option value="PPT">PPT (Permiso por Protección Temporal)</option>
+                <option value="TI">TI (Tarjeta de Identidad)</option>
                 <option value="PASAPORTE">Pasaporte</option>
-                <option value="GENERAL">General</option>
               </select>
             </div>
             <div className="col-span-2">
@@ -153,12 +159,13 @@ export const EditClientModal = () => {
             </div>
             <div>
               <label className="block font-semibold text-slate-700 text-[11px] mb-1">
-                Correo Electrónico
+                Correo Electrónico <span className="text-rose-500">*</span>
               </label>
               <input
                 type="email"
                 value={correo}
                 onChange={(e) => setCorreo(e.target.value)}
+                required
                 className={inputCls}
               />
             </div>

@@ -28,16 +28,16 @@ export const CierreZModal = () => {
       const adminCheck = Boolean(currentUser?.rol?.toLowerCase().includes('admin'));
       setSelectedCajeroId(adminCheck ? 'TODOS' : (currentUser?.id_usuario || 3));
     }
-  }, [activeModal, currentUser?.id_usuario]);
+  }, [activeModal, currentUser?.id_usuario, currentUser?.rol]);
 
   if (activeModal !== 'cierre-z') return null;
 
   // Lista de cuentas y cajeros del sistema
   const cajerosList = [
-    { id: 'TODOS', nombre: 'Consolidado General (Toda la Tienda)', cargo: 'Auditoría General de Caja', doc: 'RUC-20489182391' },
-    { id: 3, nombre: 'Camila Valenzuela', cargo: 'Cajera Turno Mañana', doc: 'DNI-74829103' },
-    { id: 2, nombre: 'Rodrigo Alarcón', cargo: 'Supervisor de Caja', doc: 'DNI-45920193' },
-    { id: 1, nombre: 'Elena Morales', cargo: 'Administradora General', doc: 'DNI-10293847' }
+    { id: 'TODOS', nombre: 'Consolidado General (Toda la Tienda)', cargo: 'Auditoría General de Caja', doc: 'NIT-901489182-3' },
+    { id: 3, nombre: 'Camila Valenzuela', cargo: 'Cajera Turno Mañana', doc: 'CC-10203042' },
+    { id: 2, nombre: 'Rodrigo Alarcón', cargo: 'Supervisor de Caja', doc: 'CC-10203041' },
+    { id: 1, nombre: 'Elena Morales', cargo: 'Administradora General', doc: 'CC-10203040' }
   ];
 
   // Si el usuario logueado no está en la lista previa, agregarlo
@@ -201,9 +201,9 @@ export const CierreZModal = () => {
           >
             {/* Cabecera Comercial y Fiscal */}
             <div className="text-center space-y-1 pb-3 border-b-2 border-slate-800">
-              <div className="font-extrabold text-sm tracking-tight">NEXPOS TECNOLOGÍA S.A.C.</div>
-              <div className="text-[10px] text-slate-600">RUC: 20489182391</div>
-              <div className="text-[10px] text-slate-600">Av. República de Panamá 3545, Lima</div>
+              <div className="font-extrabold text-sm tracking-tight">NEXPOS TECNOLOGÍA S.A.S.</div>
+              <div className="text-[10px] text-slate-600">NIT: 901.489.182-3</div>
+              <div className="text-[10px] text-slate-600">Calle 93A #11-28, Bogotá D.C.</div>
               <div className="text-[11px] font-extrabold uppercase bg-slate-900 text-white py-1 px-2.5 rounded mt-2 inline-block">
                 ★ {isConsolidated ? 'CORTE Z CONSOLIDADO TIENDA' : 'CORTE Z INDIVIDUAL DE CAJERO'} ★
               </div>

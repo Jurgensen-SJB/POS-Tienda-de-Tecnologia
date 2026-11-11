@@ -31,7 +31,7 @@ async function fetchJson(url, options = {}) {
           body = JSON.stringify(parsed);
         }
       }
-    } catch (_) {}
+    } catch {}
   }
 
   try {
@@ -42,7 +42,9 @@ async function fetchJson(url, options = {}) {
     });
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.error || `HTTP error ${res.status}`);
+      const error = new Error(errData.error || `HTTP error ${res.status}`);
+      Object.assign(error, errData);
+      throw error;
     }
     return await res.json();
   } catch (err) {
@@ -85,6 +87,7 @@ export const api = {
   createClient: (data) => fetchJson('/clientes', { method: 'POST', body: JSON.stringify(data) }),
   updateClient: (id, data) => fetchJson(`/clientes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   toggleClientStatus: (id, estado, extra = {}) => fetchJson(`/clientes/${id}/estado`, { method: 'PATCH', body: JSON.stringify({ estado, ...extra }) }),
+  deleteClient: (id, extra = {}) => fetchJson(`/clientes/${id}`, { method: 'DELETE', body: JSON.stringify(extra) }),
 
   // Empleados / Usuarios
   getEmployees: (params = {}) => {
@@ -159,4 +162,11 @@ export const api = {
   // Auditoría y Registro de Operaciones
   getAuditoria: () => fetchJson('/auditoria'),
   createAuditoria: (data) => fetchJson('/auditoria', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Verificación de Correo Electrónico y Configuración SMTP Real
+  resendVerificationEmail: (tipo, id) => fetchJson('/verificacion/reenviar', { method: 'POST', body: JSON.stringify({ tipo, id }) }),
+  getVerificationStatus: (tipo, id) => fetchJson(`/verificacion/estado/${tipo}/${id}`),
+  validateOtpCode: (tipo, id, codigo) => fetchJson('/verificacion/validar-otp', { method: 'POST', body: JSON.stringify({ tipo, id, codigo }) }),
+  getSmtpConfig: () => fetchJson('/verificacion/smtp-config'),
+  saveSmtpConfig: (data) => fetchJson('/verificacion/smtp-config', { method: 'POST', body: JSON.stringify(data) }),
 };

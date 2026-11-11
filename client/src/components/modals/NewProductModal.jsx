@@ -82,7 +82,7 @@ export const NewProductModal = () => {
       };
       setProducts(prev => [enriched, ...prev]);
       showToast(`¡Producto de tecnología "${name}" registrado con éxito!`, 'check_circle');
-    } catch (err) {
+    } catch {
       // Fallback
       const fallbackProd = {
         id_producto: Date.now(),

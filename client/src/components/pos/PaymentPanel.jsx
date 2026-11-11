@@ -20,13 +20,9 @@ export const PaymentPanel = () => {
   const {
     subtotal,
     discountAmount,
-    discountLabel,
-    activeDiscountLabel,
     tax,
     grandTotal,
     cart,
-    currentClient,
-    payMethod,
     setPayMethod,
     cashReceived,
     setCashReceived,
@@ -34,8 +30,7 @@ export const PaymentPanel = () => {
     resolvedPay,
     executeCheckout,
     showToast,
-    paymentMethods,
-    ticketCounter,
+    paymentMethods
   } = useApp();
 
   const [cardRef, setCardRef] = useState("");
@@ -174,7 +169,7 @@ export const PaymentPanel = () => {
       setQrStatus("idle");
       setQrRef("");
     }
-  }, [resolvedPay?.type, resolvedPay?.nombre, grandTotal, startQrSession]);
+  }, [resolvedPay?.type, resolvedPay?.nombre, grandTotal, startQrSession, cart]);
 
   // Cleanup poll on unmount
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
@@ -186,7 +181,7 @@ export const PaymentPanel = () => {
         setCashReceived(String(Math.round(grandTotal)));
       }
     }
-  }, [grandTotal, resolvedPay?.type]);
+  }, [grandTotal, resolvedPay?.type, cashReceived, setCashReceived]);
 
   const setMontoPreset = (val) => {
     const num = Math.round(val);

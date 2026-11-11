@@ -47,8 +47,8 @@ export const CheckoutSuccessModal = () => {
         <div className="bg-slate-50 p-3 rounded-xl border border-dashed border-slate-300 font-mono text-[11px] space-y-1.5 max-h-80 overflow-y-auto">
           <div className="flex flex-col items-center justify-center pt-1 pb-1">
             <img src={logoImg} alt="NexPOS Logo" className="w-10 h-10 object-contain mb-1" />
-            <div className="text-center font-bold text-slate-800 text-xs">NEXPOS TECNOLOGÍA S.A.C.</div>
-            <div className="text-center text-[10px] text-slate-400">RUC: 20489182391 • Caja 01 - Turno Mañana</div>
+            <div className="text-center font-bold text-slate-800 text-xs">NEXPOS TECNOLOGÍA S.A.S.</div>
+            <div className="text-center text-[10px] text-slate-400">NIT: 901.489.182-3 • Caja 01 - Turno Mañana</div>
             <div className="text-center text-[10px] text-slate-400">{date}</div>
           </div>
           <div className="border-b border-dashed border-slate-300 my-1.5"></div>

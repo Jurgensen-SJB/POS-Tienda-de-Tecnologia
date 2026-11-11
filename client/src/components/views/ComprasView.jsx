@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
-import { NewPurchaseModal } from '../modals/NewPurchaseModal';
 import { formatCOP } from '../../utils/format';
 
 export const ComprasView = () => {

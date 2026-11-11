@@ -3,6 +3,7 @@ const router = express.Router();
 const { pool } = require('../db/pool');
 const { employees } = require('../db/fallbackData');
 const { registrarOperacion } = require('./auditoria');
+const { generateVerificationToken, buildVerificationUrl, sendVerificationEmail } = require('../utils/mailer');
 
 // Helper to map role name to id_rol
 const getRoleId = (roleName) => {
@@ -45,7 +46,11 @@ router.get('/', async (req, res) => {
     query += ` ORDER BY e.id_empleado ASC`;
 
     const result = await pool.query(query, params);
-    res.json(result.rows);
+    res.json(result.rows.map(r => ({
+      ...r,
+      correo_verificado: Boolean(r.correo_verificado),
+      verificationUrl: r.token_verificacion ? buildVerificationUrl('empleado', r.token_verificacion) : null
+    })));
   } catch (err) {
     let filtered = [...employees];
     if (estado && estado !== 'TODOS') {
@@ -60,7 +65,11 @@ router.get('/', async (req, res) => {
         (e.cargo && e.cargo.toLowerCase().includes(term))
       );
     }
-    res.json(filtered);
+    res.json(filtered.map(e => ({
+      ...e,
+      correo_verificado: Boolean(e.correo_verificado),
+      verificationUrl: e.token_verificacion ? buildVerificationUrl('empleado', e.token_verificacion) : null
+    })));
   }
 });
 
@@ -96,7 +105,7 @@ router.get('/:id', async (req, res) => {
 // POST /api/empleados
 router.post('/', async (req, res) => {
   const {
-    tipo_identificacion = 'DNI',
+    tipo_identificacion = 'CC',
     numero_identificacion,
     nombres,
     apellidos,
@@ -113,14 +122,21 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'Identificación, nombres y apellidos son obligatorios' });
   }
 
+  if (!correo || !correo.trim().includes('@')) {
+    return res.status(400).json({ error: 'El correo electrónico válido es obligatorio para verificar al colaborador' });
+  }
+
+  const token = generateVerificationToken('emp');
+  const cleanEmail = correo.trim().toLowerCase();
+
   const client = await pool.connect().catch(() => null);
   if (client) {
     try {
       await client.query('BEGIN');
       const empRes = await client.query(
-        `INSERT INTO empleados (tipo_identificacion, numero_identificacion, nombres, apellidos, telefono, correo, cargo, estado, fecha_ingreso)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, 'ACTIVO', CURRENT_DATE) RETURNING *`,
-        [tipo_identificacion, numero_identificacion, nombres, apellidos, telefono, correo, cargo]
+        `INSERT INTO empleados (tipo_identificacion, numero_identificacion, nombres, apellidos, telefono, correo, cargo, correo_verificado, token_verificacion, estado, fecha_ingreso, fecha_registro)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE, $8, 'ACTIVO', CURRENT_DATE, CURRENT_TIMESTAMP) RETURNING *`,
+        [tipo_identificacion, numero_identificacion, nombres, apellidos, telefono, cleanEmail, cargo, token]
       );
       const newEmp = empRes.rows[0];
 
@@ -137,12 +153,21 @@ router.post('/', async (req, res) => {
       newEmp.rol = rol;
       newEmp.nombre_usuario = nombre_usuario || '';
 
+      const mailInfo = await sendVerificationEmail({
+        to: cleanEmail,
+        nombre: `${newEmp.nombres} ${newEmp.apellidos}`.trim(),
+        tipo: 'empleado',
+        token,
+      });
+      newEmp.verificationUrl = mailInfo.verificationUrl;
+      newEmp.previewUrl = mailInfo.previewUrl;
+
       await registrarOperacion({
         id_usuario,
         operacion: 'CREAR',
         tabla_afectada: 'empleados',
         id_registro_afectado: newEmp.id_empleado,
-        descripcion: `Registro de colaborador: ${newEmp.nombres} ${newEmp.apellidos} (${newEmp.cargo})`,
+        descripcion: `Registro de colaborador: ${newEmp.nombres} ${newEmp.apellidos} (${newEmp.cargo}) - Verificación enviada a ${cleanEmail}`,
         datos_nuevos: newEmp
       });
 
@@ -163,15 +188,32 @@ router.post('/', async (req, res) => {
     nombres,
     apellidos,
     telefono,
-    correo,
+    correo: cleanEmail,
     cargo,
     rol,
     nombre_usuario: nombre_usuario || '',
+    password: password || '123456',
+    correo_verificado: false,
+    token_verificacion: token,
+    fecha_verificacion: null,
     estado: 'ACTIVO',
-    fecha_ingreso: new Date().toISOString().split('T')[0]
+    fecha_ingreso: new Date().toISOString().split('T')[0],
+    fecha_registro: new Date().toISOString()
   };
   employees.push(newEmp);
-  res.status(201).json(newEmp);
+
+  const mailInfo = await sendVerificationEmail({
+    to: cleanEmail,
+    nombre: `${newEmp.nombres} ${newEmp.apellidos}`.trim(),
+    tipo: 'empleado',
+    token,
+  });
+
+  res.status(201).json({
+    ...newEmp,
+    verificationUrl: mailInfo.verificationUrl,
+    previewUrl: mailInfo.previewUrl,
+  });
 });
 
 // 4. MODIFICAR EMPLEADO
@@ -199,6 +241,16 @@ router.put('/:id', async (req, res) => {
   if (client) {
     try {
       await client.query('BEGIN');
+      const prevRes = await client.query('SELECT correo FROM empleados WHERE id_empleado = $1', [id]);
+      if (prevRes.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: 'Empleado no encontrado' });
+      }
+      const prevEmail = (prevRes.rows[0].correo || '').trim().toLowerCase();
+      const nextEmail = correo ? correo.trim().toLowerCase() : prevEmail;
+      const emailChanged = Boolean(correo && nextEmail && nextEmail !== prevEmail);
+      const newToken = emailChanged ? generateVerificationToken('emp') : null;
+
       const updateRes = await client.query(
         `UPDATE empleados
          SET tipo_identificacion = COALESCE($1, tipo_identificacion),
@@ -208,16 +260,13 @@ router.put('/:id', async (req, res) => {
              telefono = COALESCE($5, telefono),
              correo = COALESCE($6, correo),
              cargo = COALESCE($7, cargo),
-             estado = COALESCE($8, estado)
+             estado = COALESCE($8, estado),
+             correo_verificado = CASE WHEN $10::boolean THEN FALSE ELSE correo_verificado END,
+             token_verificacion = CASE WHEN $10::boolean THEN $11 ELSE token_verificacion END
          WHERE id_empleado = $9
          RETURNING *`,
-        [tipo_identificacion, numero_identificacion, nombres, apellidos, telefono, correo, cargo, estado, id]
+        [tipo_identificacion, numero_identificacion, nombres, apellidos, telefono, nextEmail, cargo, estado, id, emailChanged, newToken]
       );
-
-      if (updateRes.rows.length === 0) {
-        await client.query('ROLLBACK');
-        return res.status(404).json({ error: 'Empleado no encontrado' });
-      }
 
       const updatedEmp = updateRes.rows[0];
 
@@ -232,6 +281,15 @@ router.put('/:id', async (req, res) => {
 
       await client.query('COMMIT');
       updatedEmp.rol = rol || updatedEmp.cargo;
+      if (emailChanged) {
+        const mailInfo = await sendVerificationEmail({
+          to: nextEmail,
+          nombre: `${updatedEmp.nombres} ${updatedEmp.apellidos}`.trim(),
+          tipo: 'empleado',
+          token: newToken,
+        });
+        updatedEmp.verificationUrl = mailInfo.verificationUrl;
+      }
       await registrarOperacion({
         id_usuario,
         operacion: 'MODIFICAR',
@@ -253,6 +311,11 @@ router.put('/:id', async (req, res) => {
   const empIndex = employees.findIndex(e => e.id_empleado === parseInt(id));
   if (empIndex === -1) return res.status(404).json({ error: 'Empleado no encontrado' });
 
+  const prevEmail = (employees[empIndex].correo || '').trim().toLowerCase();
+  const nextEmail = correo !== undefined ? correo.trim().toLowerCase() : prevEmail;
+  const emailChanged = Boolean(correo !== undefined && nextEmail && nextEmail !== prevEmail);
+  const newToken = emailChanged ? generateVerificationToken('emp') : employees[empIndex].token_verificacion;
+
   employees[empIndex] = {
     ...employees[empIndex],
     ...(tipo_identificacion && { tipo_identificacion }),
@@ -260,11 +323,22 @@ router.put('/:id', async (req, res) => {
     nombres,
     apellidos,
     ...(telefono !== undefined && { telefono }),
-    ...(correo !== undefined && { correo }),
+    ...(correo !== undefined && { correo: nextEmail }),
     ...(cargo && { cargo }),
     ...(rol && { rol }),
-    ...(estado && { estado })
+    ...(estado && { estado }),
+    ...(emailChanged && { correo_verificado: false, token_verificacion: newToken, fecha_verificacion: null })
   };
+
+  if (emailChanged) {
+    const mailInfo = await sendVerificationEmail({
+      to: nextEmail,
+      nombre: `${employees[empIndex].nombres} ${employees[empIndex].apellidos}`.trim(),
+      tipo: 'empleado',
+      token: newToken,
+    });
+    employees[empIndex].verificationUrl = mailInfo.verificationUrl;
+  }
 
   await registrarOperacion({
     id_usuario,

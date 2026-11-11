@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { formatCOP } from '../../utils/format';
 
@@ -12,8 +12,6 @@ export const NewPurchaseModal = () => {
     createPurchase,
     showToast,
   } = useApp();
-
-  if (activeModal !== 'new-purchase') return null;
 
   const activeProviders = useMemo(() =>
     providers.filter(p => (p.estado || 'ACTIVO').toUpperCase() === 'ACTIVO'),
@@ -29,16 +27,7 @@ export const NewPurchaseModal = () => {
   const [filterMode, setFilterMode] = useState('TODOS'); // 'TODOS' | 'STOCK_BAJO'
   const [submitting, setSubmitting] = useState(false);
 
-  // Inicializar o reaccionar a purchaseInitialProduct
-  useEffect(() => {
-    if (purchaseInitialProduct) {
-      applySelectedProduct(purchaseInitialProduct);
-    } else {
-      setSelectedProduct(null);
-    }
-  }, [purchaseInitialProduct]);
-
-  const applySelectedProduct = (prod) => {
+  const applySelectedProduct = useCallback((prod) => {
     setSelectedProduct(prod);
 
     // Identificar proveedor asociado
@@ -67,7 +56,18 @@ export const NewPurchaseModal = () => {
     const minStock = prod.stock_minimo || 5;
     const sugerido = currentStock <= minStock ? Math.max(10, (minStock * 2) - currentStock) : 10;
     setCantidad(sugerido);
-  };
+  }, [activeProviders]);
+
+  // Inicializar o reaccionar a purchaseInitialProduct
+  useEffect(() => {
+    if (activeModal === 'new-purchase') {
+      if (purchaseInitialProduct) {
+        applySelectedProduct(purchaseInitialProduct);
+      } else {
+        setSelectedProduct(null);
+      }
+    }
+  }, [activeModal, purchaseInitialProduct, applySelectedProduct]);
 
   // Filtrado de productos en caso de que no haya seleccionado ninguno
   const filteredProducts = useMemo(() => {
@@ -149,6 +149,8 @@ export const NewPurchaseModal = () => {
       setSubmitting(false);
     }
   };
+
+  if (activeModal !== 'new-purchase') return null;
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-150">
@@ -354,7 +356,7 @@ export const NewPurchaseModal = () => {
                   <option value="" disabled>-- Selecciona un proveedor --</option>
                   {activeProviders.map(pr => (
                     <option key={pr.id_proveedor} value={pr.id_proveedor}>
-                      {pr.nombre} ({pr.identificacion || 'RUC'})
+                      {pr.nombre} ({pr.identificacion || 'NIT'})
                     </option>
                   ))}
                 </select>
@@ -363,7 +365,7 @@ export const NewPurchaseModal = () => {
                   <div className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between text-[11px] text-slate-500">
                     <span className="flex items-center gap-1">
                       <span className="material-symbols-outlined text-xs text-slate-400">badge</span>
-                      {currentProviderObj.identificacion || 'RUC no reg.'}
+                      {currentProviderObj.identificacion || 'NIT no reg.'}
                     </span>
                     <span className="flex items-center gap-1">
                       <span className="material-symbols-outlined text-xs text-slate-400">call</span>

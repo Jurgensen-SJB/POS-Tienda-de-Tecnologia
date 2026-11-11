@@ -72,7 +72,7 @@ router.post('/', async (req, res) => {
       operacion: 'CREAR',
       tabla_afectada: 'proveedores',
       id_registro_afectado: newProv.id_proveedor,
-      descripcion: `Registro de proveedor: ${newProv.nombre} (${newProv.identificacion || 'Sin RUC'})`,
+      descripcion: `Registro de proveedor: ${newProv.nombre} (${newProv.identificacion || 'Sin NIT'})`,
       datos_nuevos: newProv
     });
 

@@ -6,7 +6,6 @@ export const EditProductModal = () => {
   const { activeModal, closeModal, productToEdit, categories = [], providers = [], saveEditedProduct, showToast } = useApp();
 
   const [name, setName] = useState('');
-  const [sku, setSku] = useState('');
   const [price, setPrice] = useState('');
   const [cost, setCost] = useState('');
   const [stock, setStock] = useState('');
@@ -18,7 +17,6 @@ export const EditProductModal = () => {
   useEffect(() => {
     if (productToEdit) {
       setName(productToEdit.nombre || '');
-      setSku(productToEdit.codigo || '');
       setPrice(productToEdit.precio_venta !== undefined ? String(productToEdit.precio_venta) : '');
       setCost(productToEdit.costo !== undefined ? String(productToEdit.costo) : '150000');
       setStock(productToEdit.stock !== undefined ? String(productToEdit.stock) : '0');
@@ -78,7 +76,7 @@ export const EditProductModal = () => {
             <div>
               <h3 className="font-bold text-slate-900 text-sm">Editar Producto (Administrador)</h3>
               <p className="text-[11px] text-slate-500">
-                Modifica precios, nombre, categoría y existencias de <strong className="text-slate-800">{name}</strong>
+                Modifica precios, nombre, categoría y existencias de <strong className="text-slate-800">{name}</strong> {productToEdit.codigo ? `(${productToEdit.codigo})` : ''}
               </p>
             </div>
           </div>

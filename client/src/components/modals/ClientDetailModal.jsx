@@ -8,6 +8,7 @@ export const ClientDetailModal = () => {
     clientDetail,
     openEditClient,
     openDeactivateClient,
+    openDeleteClient,
     assignClient,
     setCurrentView
   } = useApp();
@@ -15,6 +16,7 @@ export const ClientDetailModal = () => {
   if (activeModal !== 'detail-client' || !clientDetail) return null;
 
   const isActive = (clientDetail.estado || 'ACTIVO').toUpperCase() === 'ACTIVO';
+  const isVerified = Boolean(clientDetail.correo_verificado);
   const fullName = `${clientDetail.nombres} ${clientDetail.apellidos || ''}`.trim();
   const docLabel = `${clientDetail.tipo_identificacion || 'DOC'}: ${clientDetail.numero_identificacion}`;
 
@@ -25,9 +27,11 @@ export const ClientDetailModal = () => {
   };
 
   const handleUseInPos = () => {
-    assignClient(fullName, docLabel, clientDetail.id_cliente);
-    setCurrentView('pos');
-    closeModal();
+    const ok = assignClient(fullName, docLabel, clientDetail.id_cliente, isVerified, clientDetail.correo);
+    if (ok) {
+      setCurrentView('pos');
+      closeModal();
+    }
   };
 
   return (
@@ -70,7 +74,7 @@ export const ClientDetailModal = () => {
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
                 <span className="text-slate-400 text-[10px] block">Tipo de Documento</span>
-                <span className="font-semibold text-slate-700">{clientDetail.tipo_identificacion || 'DNI'}</span>
+                <span className="font-semibold text-slate-700">{clientDetail.tipo_identificacion || 'CC'}</span>
               </div>
               <div>
                 <span className="text-slate-400 text-[10px] block">Número de Documento</span>
@@ -102,8 +106,12 @@ export const ClientDetailModal = () => {
             </div>
             <div className="p-3 bg-white border border-slate-200 rounded-xl">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Estado de Cuenta</span>
-              <span className={`text-xs font-bold ${isActive ? 'text-emerald-600' : 'text-rose-600'}`}>
-                {isActive ? 'Habilitado para compras' : 'Bloqueado para compras'}
+              <span className={`text-xs font-bold ${isActive && isVerified ? 'text-emerald-600' : 'text-amber-600'}`}>
+                {!isActive
+                  ? 'Bloqueado (Inactivo)'
+                  : isVerified
+                  ? 'Habilitado (Correo Verificado ✓)'
+                  : 'Bloqueado (Correo sin verificar)'}
               </span>
             </div>
           </div>
@@ -119,22 +127,27 @@ export const ClientDetailModal = () => {
               <span className="material-symbols-outlined text-xs">edit</span>
               Modificar
             </button>
-            {clientDetail.id_cliente !== 1 && (
-              <button
-                onClick={() => openDeactivateClient(clientDetail)}
-                className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-lg font-semibold text-xs flex items-center gap-1 transition-colors"
-              >
-                <span className="material-symbols-outlined text-xs">
-                  {isActive ? 'person_off' : 'how_to_reg'}
-                </span>
-                {isActive ? 'Desactivar' : 'Activar'}
-              </button>
-            )}
+            <button
+              onClick={() => openDeactivateClient(clientDetail)}
+              className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-lg font-semibold text-xs flex items-center gap-1 transition-colors"
+            >
+              <span className="material-symbols-outlined text-xs">
+                {isActive ? 'person_off' : 'how_to_reg'}
+              </span>
+              {isActive ? 'Desactivar' : 'Activar'}
+            </button>
+            <button
+              onClick={() => openDeleteClient(clientDetail)}
+              className="px-3 py-1.5 bg-rose-50 border border-rose-200 hover:bg-rose-600 hover:text-white text-rose-600 rounded-lg font-semibold text-xs flex items-center gap-1 transition-colors cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-xs">delete</span>
+              Eliminar
+            </button>
           </div>
 
           <button
             onClick={handleUseInPos}
-            disabled={!isActive}
+            disabled={!isActive || !isVerified}
             className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-semibold text-xs flex items-center gap-1.5 transition-colors disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-sm">point_of_sale</span>

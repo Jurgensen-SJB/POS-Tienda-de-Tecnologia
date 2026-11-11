@@ -36,7 +36,7 @@ function getDefaultPermisosByRol(rol = '') {
 export const EditUserModal = () => {
   const { activeModal, closeModal, employeeToEdit, saveEditedEmployee, showToast, allPermisos, updateRolPermisos, currentUser } = useApp();
 
-  const [tipoDoc, setTipoDoc]         = useState('DNI');
+  const [tipoDoc, setTipoDoc]         = useState('CC');
   const [numDoc, setNumDoc]           = useState('');
   const [nombres, setNombres]         = useState('');
   const [apellidos, setApellidos]     = useState('');
@@ -61,7 +61,8 @@ export const EditUserModal = () => {
 
   useEffect(() => {
     if (employeeToEdit) {
-      setTipoDoc(employeeToEdit.tipo_identificacion || 'DNI');
+      const rawTipo = employeeToEdit.tipo_identificacion || 'CC';
+      setTipoDoc(rawTipo === 'DNI' ? 'CC' : rawTipo);
       setNumDoc(employeeToEdit.numero_identificacion || '');
       setNombres(employeeToEdit.nombres || '');
       setApellidos(employeeToEdit.apellidos || '');
@@ -188,7 +189,11 @@ export const EditUserModal = () => {
                   <div>
                     <label className="font-semibold text-slate-600 block mb-1">Tipo Doc.</label>
                     <select className={ic} value={tipoDoc} onChange={e => setTipoDoc(e.target.value)}>
-                      <option>DNI</option><option>Cedula</option><option>Pasaporte</option><option value="Extranjeria">Carnet Ext.</option>
+                      <option value="CC">CC</option>
+                      <option value="CE">CE</option>
+                      <option value="PPT">PPT</option>
+                      <option value="TI">TI</option>
+                      <option value="PASAPORTE">Pasaporte</option>
                     </select>
                   </div>
                   <div className="col-span-2">

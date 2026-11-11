@@ -7,23 +7,150 @@ export const EstadisticasView = () => {
     invoices = [],
     products = [],
     purchases = [],
-    caja,
+    clients = [],
     employees = [],
-    showToast,
-    currentUser,
-    isAdmin
+    showToast
   } = useApp();
 
   const [timeRange, setTimeRange] = useState('mes'); // 'hoy' | 'semana' | 'mes' | 'todos'
 
-  // Ventas completadas no anuladas
+  // Helper para evaluar si una fecha entra en el rango seleccionado
+  const isDateInRange = (dateStr) => {
+    if (timeRange === 'todos') return true;
+    if (!dateStr) return true;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return true;
+
+    const now = new Date();
+    if (timeRange === 'hoy') {
+      return d.toDateString() === now.toDateString();
+    } else if (timeRange === 'semana') {
+      const diffDays = (now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24);
+      return diffDays >= 0 && diffDays <= 7;
+    } else if (timeRange === 'mes') {
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }
+    return true;
+  };
+
+  // Ventas completadas no anuladas según el rango temporal
   const completedInvoices = useMemo(() => {
     return invoices.filter(inv => {
       const isNotVoided = (inv.estado || 'COMPLETADA').toUpperCase() !== 'ANULADA';
-      // Filtro de tiempo opcional
-      return isNotVoided;
+      if (!isNotVoided) return false;
+      const dateStr = inv.fecha_creacion || inv.fecha_hora || inv.fecha_completa || inv.fecha_dia || inv.created_at;
+      return isDateInRange(dateStr);
     });
   }, [invoices, timeRange]);
+
+  // Estadísticas de Registro de Usuarios (Clientes + Colaboradores/Usuarios del Sistema)
+  const userRegistrationStats = useMemo(() => {
+    const validClients = clients.filter(
+      c => c.id_cliente !== 1 && c.numero_identificacion !== '0000000000'
+    );
+    const validEmployees = employees || [];
+
+    const clientsInPeriod = validClients.filter(c => isDateInRange(c.fecha_registro));
+    const employeesInPeriod = validEmployees.filter(e => isDateInRange(e.fecha_registro || e.fecha_ingreso));
+
+    const totalClients = validClients.length;
+    const verifiedClients = validClients.filter(c => Boolean(c.correo_verificado)).length;
+    const pendingClients = totalClients - verifiedClients;
+    const activeClients = validClients.filter(c => (c.estado || 'ACTIVO').toUpperCase() === 'ACTIVO').length;
+
+    const totalEmployees = validEmployees.length;
+    const verifiedEmployees = validEmployees.filter(e => e.correo_verificado !== undefined ? Boolean(e.correo_verificado) : true).length;
+    const pendingEmployees = totalEmployees - verifiedEmployees;
+    const activeEmployees = validEmployees.filter(e => (e.estado || 'ACTIVO').toUpperCase() === 'ACTIVO').length;
+
+    const totalRegistrados = totalClients + totalEmployees;
+    const totalVerificados = verifiedClients + verifiedEmployees;
+    const totalPendientes = pendingClients + pendingEmployees;
+    const nuevosEnPeriodo = clientsInPeriod.length + employeesInPeriod.length;
+
+    const tasaVerificacionGlobal = totalRegistrados > 0
+      ? ((totalVerificados / totalRegistrados) * 100).toFixed(1)
+      : '100.0';
+
+    const tasaVerificacionClientes = totalClients > 0
+      ? ((verifiedClients / totalClients) * 100).toFixed(1)
+      : '100.0';
+
+    const tasaVerificacionEmpleados = totalEmployees > 0
+      ? ((verifiedEmployees / totalEmployees) * 100).toFixed(1)
+      : '100.0';
+
+    // Desglose por tipo de documento en clientes
+    const docTypesMap = {};
+    validClients.forEach(c => {
+      const rawT = (c.tipo_identificacion || 'CC').toUpperCase();
+      const t = rawT === 'DNI' ? 'CC' : rawT === 'RUC' ? 'NIT' : rawT;
+      docTypesMap[t] = (docTypesMap[t] || 0) + 1;
+    });
+    const docBreakdown = Object.entries(docTypesMap).map(([tipo, count]) => ({
+      tipo,
+      count,
+      pct: totalClients > 0 ? ((count / totalClients) * 100).toFixed(1) : '0.0'
+    }));
+
+    // Historial unificado de registros recientes
+    const unifiedRecent = [
+      ...validClients.map(c => {
+        const rawT = (c.tipo_identificacion || 'CC').toUpperCase();
+        const t = rawT === 'DNI' ? 'CC' : rawT === 'RUC' ? 'NIT' : rawT;
+        return {
+          id: `cli-${c.id_cliente}`,
+          nombre: `${c.nombres} ${c.apellidos || ''}`.trim(),
+          correo: c.correo || '—',
+          tipo: 'Cliente Comercial',
+          documento: `${t}: ${c.numero_identificacion}`,
+          verificado: Boolean(c.correo_verificado),
+          estado: (c.estado || 'ACTIVO').toUpperCase(),
+          fecha: c.fecha_registro || null
+        };
+      }),
+      ...validEmployees.map(e => {
+        const rawT = (e.tipo_identificacion || 'CC').toUpperCase();
+        const t = rawT === 'DNI' ? 'CC' : rawT;
+        return {
+          id: `emp-${e.id_empleado}`,
+          nombre: `${e.nombres} ${e.apellidos || ''}`.trim(),
+          correo: e.correo || '—',
+          tipo: `Usuario (${e.rol || e.cargo || 'Cajero'})`,
+          documento: `${t}: ${e.numero_identificacion}`,
+          verificado: e.correo_verificado !== undefined ? Boolean(e.correo_verificado) : true,
+          estado: (e.estado || 'ACTIVO').toUpperCase(),
+          fecha: e.fecha_registro || e.fecha_ingreso || null
+        };
+      })
+    ].sort((a, b) => {
+      const da = a.fecha ? new Date(a.fecha).getTime() : 0;
+      const db = b.fecha ? new Date(b.fecha).getTime() : 0;
+      return db - da;
+    });
+
+    return {
+      totalRegistrados,
+      totalVerificados,
+      totalPendientes,
+      nuevosEnPeriodo,
+      tasaVerificacionGlobal,
+      totalClients,
+      verifiedClients,
+      pendingClients,
+      activeClients,
+      clientsInPeriodCount: clientsInPeriod.length,
+      tasaVerificacionClientes,
+      totalEmployees,
+      verifiedEmployees,
+      pendingEmployees,
+      activeEmployees,
+      employeesInPeriodCount: employeesInPeriod.length,
+      tasaVerificacionEmpleados,
+      docBreakdown,
+      recentRegistrations: unifiedRecent.slice(0, 6)
+    };
+  }, [clients, employees, timeRange]);
 
   // Cálculos Financieros
   const totalVentas = useMemo(() => {
@@ -39,7 +166,6 @@ export const EstadisticasView = () => {
   }, [purchases]);
 
   const gananciaEstimada = useMemo(() => {
-    // Estimación de margen comercial (~28-35% en tecnología)
     return totalVentas * 0.32;
   }, [totalVentas]);
 
@@ -87,7 +213,7 @@ export const EstadisticasView = () => {
     return list.sort((a, b) => b.total - a.total);
   }, [completedInvoices, totalVentas]);
 
-  // Top Productos (simulados/calculados a partir de inventario y ventas)
+  // Top Productos
   const topProducts = useMemo(() => {
     return products.slice(0, 5).map((p, idx) => {
       const unitsSold = 15 - idx * 2;
@@ -143,7 +269,7 @@ export const EstadisticasView = () => {
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Métricas ejecutivas de rendimiento comercial, recaudación por canal y auditoría de flujo
+            Métricas de registro y verificación de usuarios, rendimiento comercial y auditoría de inventario
           </p>
         </div>
 
@@ -178,7 +304,208 @@ export const EstadisticasView = () => {
         </div>
       </div>
 
-      {/* KPI Cards Destacados */}
+      {/* ===================================================================== */}
+      {/* BLOQUE NUEVO: ESTADÍSTICAS DE REGISTRO Y VERIFICACIÓN DE USUARIOS     */}
+      {/* ===================================================================== */}
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col gap-3.5 shrink-0">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-blue-600 text-base">how_to_reg</span>
+            <div>
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                Estadísticas de Registro y Verificación de Usuarios (Clientes &amp; Colaboradores)
+              </h3>
+              <p className="text-[11px] text-slate-400">
+                Política activa: Registro obligatorio con verificación por enlace de correo electrónico
+              </p>
+            </div>
+          </div>
+          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+            <span className="material-symbols-outlined text-xs">verified_user</span>
+            {userRegistrationStats.tasaVerificacionGlobal}% Cuentas Verificadas
+          </span>
+        </div>
+
+        {/* Sub-KPIs de Registro de Usuarios */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Card 1: Total Usuarios Registrados */}
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                Total Usuarios Registrados
+              </span>
+              <span className="material-symbols-outlined text-blue-600 text-base">groups</span>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-2xl font-mono font-extrabold text-slate-900">
+                {userRegistrationStats.totalRegistrados}
+              </span>
+              <span className="text-[11px] font-bold text-blue-600">
+                +{userRegistrationStats.nuevosEnPeriodo} en este periodo
+              </span>
+            </div>
+            <span className="text-[10px] text-slate-400 mt-1">
+              {userRegistrationStats.totalClients} clientes · {userRegistrationStats.totalEmployees} colaboradores
+            </span>
+          </div>
+
+          {/* Card 2: Clientes Comerciales Registrados */}
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                Clientes Registrados (POS)
+              </span>
+              <span className="material-symbols-outlined text-emerald-600 text-base">person_check</span>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-2xl font-mono font-extrabold text-slate-900">
+                {userRegistrationStats.totalClients}
+              </span>
+              <span className="text-[11px] font-bold text-emerald-600">
+                {userRegistrationStats.verifiedClients} verificados ✓
+              </span>
+            </div>
+            <span className="text-[10px] text-slate-400 mt-1">
+              {userRegistrationStats.activeClients} activos · {userRegistrationStats.pendingClients} pendientes de correo
+            </span>
+          </div>
+
+          {/* Card 3: Colaboradores / Usuarios RBAC */}
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                Usuarios del Sistema (RBAC)
+              </span>
+              <span className="material-symbols-outlined text-indigo-600 text-base">badge</span>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-2xl font-mono font-extrabold text-slate-900">
+                {userRegistrationStats.totalEmployees}
+              </span>
+              <span className="text-[11px] font-bold text-indigo-600">
+                {userRegistrationStats.verifiedEmployees} verificados ✓
+              </span>
+            </div>
+            <span className="text-[10px] text-slate-400 mt-1">
+              {userRegistrationStats.activeEmployees} activos · {userRegistrationStats.pendingEmployees} sin verificar
+            </span>
+          </div>
+
+          {/* Card 4: Verificación por Correo */}
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                Verificación por Correo
+              </span>
+              <span className="material-symbols-outlined text-amber-600 text-base">mark_email_read</span>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-2xl font-mono font-extrabold text-emerald-600">
+                {userRegistrationStats.tasaVerificacionGlobal}%
+              </span>
+              <span className="text-[11px] font-semibold text-slate-600">
+                ({userRegistrationStats.totalVerificados}/{userRegistrationStats.totalRegistrados})
+              </span>
+            </div>
+            <span className="text-[10px] text-amber-700 font-medium mt-1">
+              {userRegistrationStats.totalPendientes > 0
+                ? `${userRegistrationStats.totalPendientes} cuenta(s) bloqueadas esperando confirmación`
+                : 'Todas las cuentas están verificadas'}
+            </span>
+          </div>
+        </div>
+
+        {/* Barras de Verificación + Últimos Registros */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pt-1">
+          {/* Progreso de Verificación y Segmentación */}
+          <div className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/60 space-y-3">
+            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+              Estado de Verificación por Tipo de Usuario
+            </span>
+
+            {/* Barra Clientes */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="font-semibold text-slate-700">Clientes Comerciales Verificados</span>
+                <span className="font-mono font-bold text-emerald-700">
+                  {userRegistrationStats.verifiedClients}/{userRegistrationStats.totalClients} ({userRegistrationStats.tasaVerificacionClientes}%)
+                </span>
+              </div>
+              <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                  style={{ width: `${userRegistrationStats.tasaVerificacionClientes}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Barra Colaboradores */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="font-semibold text-slate-700">Colaboradores / Usuarios Verificados</span>
+                <span className="font-mono font-bold text-blue-700">
+                  {userRegistrationStats.verifiedEmployees}/{userRegistrationStats.totalEmployees} ({userRegistrationStats.tasaVerificacionEmpleados}%)
+                </span>
+              </div>
+              <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-blue-600 h-full rounded-full transition-all duration-500"
+                  style={{ width: `${userRegistrationStats.tasaVerificacionEmpleados}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Distribución por Documento */}
+            <div className="pt-2 border-t border-slate-200/80">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                Segmentación de Clientes por Documento
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {userRegistrationStats.docBreakdown.map(d => (
+                  <span
+                    key={d.tipo}
+                    className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-700 font-mono"
+                  >
+                    {d.tipo}: <strong>{d.count}</strong> ({d.pct}%)
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Tabla de Últimos Usuarios Registrados */}
+          <div className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/60 flex flex-col justify-between">
+            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-2">
+              Últimos Usuarios y Clientes Registrados
+            </span>
+            <div className="divide-y divide-slate-200/60 text-xs max-h-44 overflow-y-auto pr-1">
+              {userRegistrationStats.recentRegistrations.map(u => (
+                <div key={u.id} className="py-1.5 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-bold text-slate-800 truncate">{u.nombre}</p>
+                    <p className="text-[10px] text-slate-500 truncate">
+                      {u.tipo} • {u.correo}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[9.5px] font-bold border ${
+                        u.verificado
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : 'bg-amber-100 text-amber-800 border-amber-300'
+                      }`}
+                    >
+                      {u.verificado ? 'Verificado ✓' : 'Pendiente'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* KPI Cards Financieros */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
         {/* KPI 1: Total Ventas */}
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between relative overflow-hidden">
@@ -217,7 +544,7 @@ export const EstadisticasView = () => {
               {formatCOP(ticketPromedio)}
             </span>
             <span className="text-[11px] text-slate-500 block mt-1">
-              Gasto medio por cliente en POS
+              Gasto medio por cliente registrado
             </span>
           </div>
           <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-blue-50 rounded-full opacity-40 pointer-events-none"></div>
@@ -412,7 +739,7 @@ export const EstadisticasView = () => {
                 Valor Total en Stock (PVP)
               </span>
               <span className="text-xl font-mono font-extrabold text-slate-900 block mt-0.5">
-                ${stockMetrics.valorAlmacen.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatCOP(stockMetrics.valorAlmacen)}
               </span>
             </div>
 

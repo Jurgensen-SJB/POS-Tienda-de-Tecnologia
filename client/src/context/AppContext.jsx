@@ -21,11 +21,7 @@ export const AppProvider = ({ children }) => {
 
   // POS State
   const [cart, setCart] = useState([]);
-  const [currentClient, setCurrentClient] = useState({
-    id_cliente: 1,
-    name: 'Consumidor Final',
-    doc: 'DNI/RUC: Sin registrar'
-  });
+  const [currentClient, setCurrentClient] = useState(null);
   const [payMethod, setPayMethod] = useState('cash'); // 'cash' | 'card' | 'qr'
   const [cashReceived, setCashReceived] = useState('');
   const [discountPct, setDiscountPct] = useState(0);
@@ -53,7 +49,7 @@ export const AppProvider = ({ children }) => {
       } else {
         localStorage.removeItem('pos_current_user');
       }
-    } catch (_) {}
+    } catch {}
   };
 
   const [userPermisos, setUserPermisos] = useState([]);
@@ -105,12 +101,25 @@ export const AppProvider = ({ children }) => {
       // Si el error viene del servidor (mensaje definido), mostrarlo sin intentar fallback local
       // Esto incluye: 403 usuario inactivo, 401 contraseña incorrecta, etc.
       const isNetworkError = err instanceof TypeError || err.message?.includes('fetch') || err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError');
-      const isInactiveError = err.message?.includes('inactiva') || err.message?.includes('desactivado') || err.message?.includes('INACTIVO');
+      const isInactiveError = err.codigo === 'USUARIO_INACTIVO' || err.message?.includes('inactiva') || err.message?.includes('desactivado') || err.message?.includes('INACTIVO');
+      const isUnverifiedError = err.codigo === 'CORREO_NO_VERIFICADO' || err.message?.includes('no ha sido verificado');
+
+      if (isUnverifiedError) {
+        showToast('Debes verificar tu correo electrónico antes de iniciar sesión.', 'mark_email_unread');
+        return {
+          success: false,
+          error: err.message,
+          codigo: 'CORREO_NO_VERIFICADO',
+          id_empleado: err.id_empleado,
+          correo: err.correo,
+          verificationUrl: err.verificationUrl,
+        };
+      }
 
       // Si el usuario está inactivo, nunca usar fallback — bloquear siempre
       if (isInactiveError) {
         showToast('Cuenta inactiva. Contacta al administrador del sistema.', 'block');
-        return { success: false, error: err.message };
+        return { success: false, error: err.message, codigo: 'USUARIO_INACTIVO' };
       }
 
       // Solo usar fallback local si el servidor está inalcanzable (error de red)
@@ -211,6 +220,7 @@ export const AppProvider = ({ children }) => {
   const [clientDetail, setClientDetail] = useState(null);
   const [clientToEdit, setClientToEdit] = useState(null);
   const [clientToDeactivate, setClientToDeactivate] = useState(null);
+  const [clientToDelete, setClientToDelete] = useState(null);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [loadingInvoice, setLoadingInvoice] = useState(false);
 
@@ -253,7 +263,16 @@ export const AppProvider = ({ children }) => {
 
       if (prodsData.length) setProducts(prodsData);
       if (catsData.length) setCategories(catsData);
-      if (clientsData.length) setClients(clientsData);
+      if (clientsData.length) {
+        setClients(
+          clientsData.filter(
+            c =>
+              c.id_cliente !== 1 &&
+              c.numero_identificacion !== '0000000000' &&
+              !(c.nombres || '').toLowerCase().includes('consumidor')
+          )
+        );
+      }
       if (empsData.length) setEmployees(empsData);
       if (salesData.length) {
         setInvoices(salesData);
@@ -392,7 +411,7 @@ export const AppProvider = ({ children }) => {
 
   const resetNewSale = () => {
     setCart([]);
-    setCurrentClient({ id_cliente: 1, name: 'Consumidor Final', doc: 'DNI/RUC: Sin registrar' });
+    setCurrentClient(null);
     setCashReceived('');
     setDiscountPct(0);
     setDiscountLabel('Descuento:');
@@ -473,6 +492,18 @@ export const AppProvider = ({ children }) => {
       return;
     }
 
+    if (!currentClient || !currentClient.id_cliente || currentClient.id_cliente === 1) {
+      showToast('Debes asignar un cliente registrado y verificado para realizar la venta', 'warning');
+      openModal('client');
+      return;
+    }
+
+    if (currentClient.correo_verificado === false) {
+      showToast('El cliente seleccionado aún no ha verificado su correo electrónico', 'mark_email_unread');
+      openModal('client');
+      return;
+    }
+
     // Validar existencias de todos los productos en el ticket antes de cobrar
     for (const item of cart) {
       const prod = products.find(p => p.id_producto === item.id_producto);
@@ -486,7 +517,7 @@ export const AppProvider = ({ children }) => {
     }
 
     const payload = {
-      id_cliente: currentClient.id_cliente || 1,
+      id_cliente: currentClient.id_cliente,
       items: cart.map(i => {
         const itemDiscPct = i.discount || 0;
         const itemDisc = i.price * i.qty * (itemDiscPct / 100);
@@ -621,7 +652,7 @@ export const AppProvider = ({ children }) => {
       setTicketCounter(c => c + 1);
       // Limpiar datos para una nueva venta de inmediato
       setCart([]);
-      setCurrentClient({ id_cliente: 1, name: 'Consumidor Final', doc: 'DNI/RUC: Sin registrar' });
+      setCurrentClient(null);
       setCashReceived('');
       setDiscountPct(0);
       setDiscountLabel('Descuento:');
@@ -632,10 +663,19 @@ export const AppProvider = ({ children }) => {
   };
 
 
-  const assignClient = (name, doc, id_cliente = null) => {
-    setCurrentClient({ id_cliente: id_cliente || Date.now(), name, doc });
+  const assignClient = (name, doc, id_cliente = null, correo_verificado = true, correo = '') => {
+    if (!id_cliente || id_cliente === 1) {
+      showToast('Debes seleccionar un cliente registrado válido', 'warning');
+      return false;
+    }
+    if (correo_verificado === false) {
+      showToast('Este cliente debe verificar su correo electrónico antes de asignarse al ticket', 'mark_email_unread');
+      return false;
+    }
+    setCurrentClient({ id_cliente, name, doc, correo_verificado: true, correo });
     closeModal();
-    showToast(`Cliente asignado: ${name}`);
+    showToast(`Cliente asignado: ${name}`, 'verified_user');
+    return true;
   };
 
   const anularFactura = async (id_venta) => {
@@ -774,7 +814,7 @@ export const AppProvider = ({ children }) => {
 
       showToast(`Producto "${updateData.nombre || 'actualizado'}" guardado con éxito`, 'check_circle');
       closeModal();
-    } catch (err) {
+    } catch {
       // Fallback
       setProducts(prev => prev.map(p => p.id_producto === id_producto ? { ...p, ...updateData } : p));
       setCart(prev => prev.map(item => {
@@ -814,7 +854,7 @@ export const AppProvider = ({ children }) => {
       await api.toggleProductStatus(productToDeactivate.id_producto, targetStatus, withUser());
       setProducts(prev => prev.map(p => p.id_producto === productToDeactivate.id_producto ? { ...p, estado: targetStatus } : p));
       showToast(`Producto ${targetStatus === 'ACTIVO' ? 'activado' : 'desactivado'} con éxito`, targetStatus === 'ACTIVO' ? 'check_circle' : 'inventory_2');
-    } catch (err) {
+    } catch {
       setProducts(prev => prev.map(p => p.id_producto === productToDeactivate.id_producto ? { ...p, estado: targetStatus } : p));
       showToast(`Producto ${targetStatus === 'ACTIVO' ? 'activado' : 'desactivado'} con éxito`, targetStatus === 'ACTIVO' ? 'check_circle' : 'inventory_2');
     } finally {
@@ -839,7 +879,7 @@ export const AppProvider = ({ children }) => {
       setProducts(prev => prev.filter(p => p.id_producto !== productToDelete.id_producto));
       setCart(prev => prev.filter(item => item.id_producto !== productToDelete.id_producto));
       showToast(`Producto "${productToDelete.nombre}" eliminado`, 'delete');
-    } catch (err) {
+    } catch {
       setProducts(prev => prev.filter(p => p.id_producto !== productToDelete.id_producto));
       setCart(prev => prev.filter(item => item.id_producto !== productToDelete.id_producto));
       showToast(`Producto "${productToDelete.nombre}" eliminado`, 'delete');
@@ -866,7 +906,7 @@ export const AppProvider = ({ children }) => {
       setEmployees(prev => prev.map(e => e.id_empleado === id ? { ...e, ...updated } : e));
       showToast(`Empleado "${data.nombres}" modificado correctamente`, 'check_circle');
       closeModal();
-    } catch (err) {
+    } catch {
       setEmployees(prev => prev.map(e => e.id_empleado === id ? { ...e, ...data } : e));
       showToast(`Empleado "${data.nombres}" modificado correctamente`, 'check_circle');
       closeModal();
@@ -886,7 +926,7 @@ export const AppProvider = ({ children }) => {
       await api.toggleEmployeeStatus(employeeToDeactivate.id_empleado, targetStatus, withUser());
       setEmployees(prev => prev.map(e => e.id_empleado === employeeToDeactivate.id_empleado ? { ...e, estado: targetStatus } : e));
       showToast(`Empleado ${targetStatus === 'ACTIVO' ? 'activado' : 'desactivado'} con éxito`, targetStatus === 'ACTIVO' ? 'check_circle' : 'person_off');
-    } catch (err) {
+    } catch {
       setEmployees(prev => prev.map(e => e.id_empleado === employeeToDeactivate.id_empleado ? { ...e, estado: targetStatus } : e));
       showToast(`Empleado ${targetStatus === 'ACTIVO' ? 'activado' : 'desactivado'} con éxito`, targetStatus === 'ACTIVO' ? 'check_circle' : 'person_off');
     } finally {
@@ -911,23 +951,98 @@ export const AppProvider = ({ children }) => {
     openModal('deactivate-client');
   };
 
-  const saveNewClient = async (data) => {
+  const openDeleteClient = (client) => {
+    setClientToDelete(client);
+    openModal('delete-client');
+  };
+
+  const deleteClientConfirmed = async () => {
+    if (!clientToDelete) return;
+    const idToRemove = clientToDelete.id_cliente;
+    const clientName = `${clientToDelete.nombres} ${clientToDelete.apellidos || ''}`.trim();
+    try {
+      await api.deleteClient(idToRemove, withUser());
+      setClients(prev => prev.filter(c => c.id_cliente !== idToRemove));
+      if (currentClient?.id_cliente === idToRemove) {
+        setCurrentClient(null);
+      }
+      showToast(`Cliente "${clientName}" eliminado permanentemente`, 'delete');
+    } catch {
+      setClients(prev => prev.filter(c => c.id_cliente !== idToRemove));
+      if (currentClient?.id_cliente === idToRemove) {
+        setCurrentClient(null);
+      }
+      showToast(`Cliente "${clientName}" eliminado`, 'delete');
+    } finally {
+      setClientToDelete(null);
+      closeModal();
+    }
+  };
+
+  const saveNewClient = async (data, closeAfter = true) => {
     try {
       const created = await api.createClient(withUser(data));
       setClients(prev => [...prev, created]);
-      showToast(`Cliente "${created.nombres}" registrado correctamente`, 'person_add');
-      closeModal();
+      showToast(`Cliente "${created.nombres}" registrado. Se envió enlace de verificación a ${created.correo}`, 'mark_email_read');
+      if (closeAfter) closeModal();
       return created;
     } catch (err) {
-      const fallbackClient = {
-        id_cliente: Date.now(),
-        ...data,
-        estado: data.estado || 'ACTIVO'
-      };
-      setClients(prev => [...prev, fallbackClient]);
-      showToast(`Cliente "${data.nombres}" registrado`, 'person_add');
-      closeModal();
-      return fallbackClient;
+      showToast(err.message || 'Error al registrar cliente', 'error');
+      throw err;
+    }
+  };
+
+  const resendVerification = async (tipo, id) => {
+    try {
+      const res = await api.resendVerificationEmail(tipo, id);
+      showToast(res.message || 'Enlace de confirmación reenviado al correo', 'forward_to_inbox');
+      if (tipo === 'cliente') {
+        setClients(prev => prev.map(c => c.id_cliente === id ? { ...c, verificationUrl: res.verificationUrl } : c));
+      } else {
+        setEmployees(prev => prev.map(e => e.id_empleado === id ? { ...e, verificationUrl: res.verificationUrl } : e));
+      }
+      return res;
+    } catch (err) {
+      showToast(err.message || 'No se pudo enviar el enlace de verificación', 'error');
+      return null;
+    }
+  };
+
+  const validateOtp = async (tipo, id, codigo) => {
+    try {
+      const res = await api.validateOtpCode(tipo, id, codigo);
+      if (tipo === 'cliente') {
+        setClients(prev => prev.map(c => c.id_cliente === id ? { ...c, correo_verificado: true } : c));
+        if (currentClient?.id_cliente === id) {
+          setCurrentClient(prev => ({ ...prev, correo_verificado: true }));
+        }
+      } else {
+        setEmployees(prev => prev.map(e => e.id_empleado === id ? { ...e, correo_verificado: true } : e));
+      }
+      showToast('¡Código validado! Correo verificado con éxito', 'verified');
+      return { success: true, ...res };
+    } catch (err) {
+      showToast(err.message || 'Código incorrecto', 'error');
+      return { success: false, error: err.message };
+    }
+  };
+
+  const refreshVerificationStatus = async (tipo, id) => {
+    try {
+      const status = await api.getVerificationStatus(tipo, id);
+      if (tipo === 'cliente') {
+        setClients(prev => prev.map(c => c.id_cliente === id ? { ...c, ...status, correo_verificado: Boolean(status.correo_verificado) } : c));
+      } else {
+        setEmployees(prev => prev.map(e => e.id_empleado === id ? { ...e, ...status, correo_verificado: Boolean(status.correo_verificado) } : e));
+      }
+      if (status.correo_verificado) {
+        showToast('¡Correo electrónico verificado correctamente!', 'verified');
+      } else {
+        showToast('El correo aún figura como pendiente de confirmación', 'schedule');
+      }
+      return status;
+    } catch {
+      return null;
     }
   };
 
@@ -937,7 +1052,7 @@ export const AppProvider = ({ children }) => {
       setClients(prev => prev.map(c => c.id_cliente === id ? { ...c, ...updated } : c));
       showToast(`Cliente "${data.nombres}" actualizado correctamente`, 'check_circle');
       closeModal();
-    } catch (err) {
+    } catch {
       setClients(prev => prev.map(c => c.id_cliente === id ? { ...c, ...data } : c));
       showToast(`Cliente "${data.nombres}" actualizado`, 'check_circle');
       closeModal();
@@ -962,7 +1077,7 @@ export const AppProvider = ({ children }) => {
       api.getProducts().then(prods => { if (Array.isArray(prods) && prods.length > 0) setProducts(prods); }).catch(() => {});
       showToast('Orden de compra registrada y stock actualizado', 'task_alt');
       return newPurchase;
-    } catch (err) {
+    } catch {
       // Fallback local
       const fallbackPurchase = {
         id_compra: Date.now(),
@@ -995,7 +1110,7 @@ export const AppProvider = ({ children }) => {
       await api.toggleClientStatus(clientToDeactivate.id_cliente, targetStatus, withUser());
       setClients(prev => prev.map(c => c.id_cliente === clientToDeactivate.id_cliente ? { ...c, estado: targetStatus } : c));
       showToast(`Cliente ${targetStatus === 'ACTIVO' ? 'activado' : 'desactivado'} con éxito`, targetStatus === 'ACTIVO' ? 'check_circle' : 'person_off');
-    } catch (err) {
+    } catch {
       setClients(prev => prev.map(c => c.id_cliente === clientToDeactivate.id_cliente ? { ...c, estado: targetStatus } : c));
       showToast(`Cliente ${targetStatus === 'ACTIVO' ? 'activado' : 'desactivado'} con éxito`, targetStatus === 'ACTIVO' ? 'check_circle' : 'person_off');
     } finally {
@@ -1033,6 +1148,7 @@ export const AppProvider = ({ children }) => {
     removeFromCart,
     clearCart,
     currentClient,
+    setCurrentClient,
     assignClient,
     payMethod,
     setPayMethod,
@@ -1112,12 +1228,18 @@ export const AppProvider = ({ children }) => {
     clientDetail,
     clientToEdit,
     clientToDeactivate,
+    clientToDelete,
     openDetailClient,
     openEditClient,
     openDeactivateClient,
+    openDeleteClient,
     saveNewClient,
     saveEditedClient,
     toggleClientStatusConfirmed,
+    deleteClientConfirmed,
+    validateOtp,
+    resendVerification,
+    refreshVerificationStatus,
 
     // Permisos
     userPermisos,

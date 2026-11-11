@@ -76,15 +76,15 @@ export const InvoiceDetailModal = () => {
             <div className="flex items-center gap-3">
               <img src={logoImg} alt="NexPOS Logo" className="w-12 h-12 object-contain rounded-lg border border-slate-200 p-1 bg-slate-50 shrink-0" />
               <div>
-                <h4 className="font-extrabold text-slate-900 text-sm tracking-tight">NEXPOS TECNOLOGÍA S.A.C.</h4>
+                <h4 className="font-extrabold text-slate-900 text-sm tracking-tight">NEXPOS TECNOLOGÍA S.A.S.</h4>
                 <p className="text-slate-500 text-[11px] leading-tight">Soluciones de Cómputo, Laptops y Accesorios</p>
-                <p className="text-slate-500 text-[10px]">Av. República de Panamá 3545, Lima • Tel: (01) 710-4400</p>
+                <p className="text-slate-500 text-[10px]">Calle 93A #11-28, Bogotá D.C. • Tel: (601) 710-4400</p>
                 <p className="text-slate-500 text-[10px]">Cajero: {inv.cajero || 'Elena Morales'}</p>
               </div>
             </div>
 
             <div className="border-2 border-slate-900 rounded-lg p-2 text-center min-w-[150px] bg-slate-50 shrink-0">
-              <div className="text-[10px] font-bold text-slate-800">R.U.C. 20489182391</div>
+              <div className="text-[10px] font-bold text-slate-800">NIT 901.489.182-3</div>
               <div className="text-[10px] font-extrabold text-blue-900 bg-blue-100 py-0.5 rounded my-1 uppercase">
                 FACTURA ELECTRÓNICA
               </div>

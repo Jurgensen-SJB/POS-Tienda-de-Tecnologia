@@ -11,8 +11,7 @@ export const CajaView = () => {
     openInvoiceModal, 
     openModal, 
     showToast,
-    currentUser,
-    loadData
+    currentUser
   } = useApp();
 
   const isAdmin = Boolean(currentUser?.rol?.toLowerCase().includes('admin'));
@@ -529,7 +528,6 @@ export const CajaView = () => {
                 const diferencia = hasInput ? contado - esperado : 0;
                 const isExact = hasInput && Math.abs(diferencia) < 1;
                 const isSobrante = hasInput && diferencia >= 1;
-                const isFaltante = hasInput && diferencia <= -1;
 
                 return (
                   <div className={`p-3 rounded-xl border text-xs font-semibold ${
@@ -649,7 +647,6 @@ export const CajaView = () => {
                     const dif = c.diferencia !== null && c.diferencia !== undefined ? parseFloat(c.diferencia) : null;
                     const isExact = dif !== null && Math.abs(dif) < 0.01;
                     const isSobrante = dif !== null && dif > 0.01;
-                    const isFaltante = dif !== null && dif < -0.01;
 
                     return (
                       <tr key={c.id_caja} className="hover:bg-slate-50/80 transition-colors">

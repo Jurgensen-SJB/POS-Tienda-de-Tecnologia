@@ -551,15 +551,15 @@ router.get('/', (req, res) => {
           <div>
             <div class="company-name">${merchant}</div>
             <div class="company-info">
-              RUC: 20489182391<br/>
-              Av. República de Panamá 3545, Lima<br/>
-              Central: (01) 710-4400 • contacto@nexpostech.com
+              NIT: 901.489.182-3<br/>
+              Calle 93A #11-28, Bogotá D.C.<br/>
+              Central: (601) 710-4400 • contacto@nexpostech.com
             </div>
           </div>
         </div>
 
         <div class="fiscal-box">
-          <div class="fiscal-ruc">R.U.C. 20489182391</div>
+          <div class="fiscal-ruc">NIT 901.489.182-3</div>
           <div class="fiscal-type">FACTURA ELECTRÓNICA</div>
           <div class="fiscal-num">${ref}</div>
         </div>
@@ -573,14 +573,14 @@ router.get('/', (req, res) => {
         </div>
         <div class="client-field">
           <span class="field-lbl">Moneda de Pago</span>
-          <span class="field-val">Dólares Americanos (USD)</span>
+          <span class="field-val">Pesos Colombianos (COP)</span>
         </div>
         <div class="client-field">
           <span class="field-lbl">Cliente / Razón Social</span>
           <span class="field-val">${client}</span>
         </div>
         <div class="client-field">
-          <span class="field-lbl">Documento / RUC</span>
+          <span class="field-lbl">Documento / NIT</span>
           <span class="field-val">${doc}</span>
         </div>
       </div>

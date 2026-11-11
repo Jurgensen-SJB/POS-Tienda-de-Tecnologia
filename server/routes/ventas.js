@@ -80,10 +80,36 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'El carrito no puede estar vacío' });
   }
 
+  if (!id_cliente || parseInt(id_cliente) === 1) {
+    return res.status(400).json({
+      error: 'Toda venta requiere un cliente registrado y con correo verificado. No se permiten ventas sin registro.'
+    });
+  }
+
   const client = await pool.connect().catch(() => null);
   if (client) {
     try {
       await client.query('BEGIN');
+
+      // Validar que el cliente exista, esté activo y tenga su correo verificado
+      const cliCheck = await client.query(
+        `SELECT id_cliente, nombres, apellidos, estado, correo_verificado FROM clientes WHERE id_cliente = $1`,
+        [id_cliente]
+      );
+      if (cliCheck.rows.length === 0 || cliCheck.rows[0].id_cliente === 1) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'El cliente asignado no se encuentra registrado en el sistema.' });
+      }
+      if ((cliCheck.rows[0].estado || 'ACTIVO').toUpperCase() === 'INACTIVO') {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'El cliente seleccionado se encuentra inactivo.' });
+      }
+      if (cliCheck.rows[0].correo_verificado === false) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({
+          error: `El cliente "${cliCheck.rows[0].nombres} ${cliCheck.rows[0].apellidos || ''}" aún no ha verificado su correo electrónico. Debe confirmar el enlace enviado a su correo antes de facturar.`
+        });
+      }
 
       // Validar existencias de todos los productos antes de procesar
       for (const item of items) {
@@ -110,7 +136,7 @@ router.post('/', async (req, res) => {
       const ventaRes = await client.query(
         `INSERT INTO ventas (id_cliente, id_usuario, id_caja, subtotal, descuento_total, impuesto, total, estado)
          VALUES ($1, $2, $3, $4, $5, $6, $7, 'COMPLETADA') RETURNING *`,
-        [id_cliente || 1, id_usuario || 1, id_caja || 1, subtotal, descuento_total || 0, impuesto || 0, total]
+        [id_cliente, id_usuario || 1, id_caja || 1, subtotal, descuento_total || 0, impuesto || 0, total]
       );
       const newVenta = ventaRes.rows[0];
 
@@ -199,7 +225,19 @@ router.post('/', async (req, res) => {
     }
   }
 
-  // Fallback in-memory
+  // Fallback in-memory: validar cliente registrado y verificado primero
+  const clientObj = clients.find(c => c.id_cliente === parseInt(id_cliente));
+  if (!clientObj || clientObj.id_cliente === 1) {
+    return res.status(400).json({
+      error: 'Toda venta requiere un cliente registrado en el sistema.'
+    });
+  }
+  if (clientObj.correo_verificado === false) {
+    return res.status(400).json({
+      error: `El cliente "${clientObj.nombres} ${clientObj.apellidos || ''}" aún no ha verificado su correo electrónico. Debe confirmar su correo antes de facturar.`
+    });
+  }
+
   // Fallback in-memory: validar stock primero
   for (const item of items) {
     const p = products.find(prod => prod.id_producto === item.id_producto);
@@ -225,8 +263,7 @@ router.post('/', async (req, res) => {
     }
   });
 
-  const clientObj = clients.find(c => c.id_cliente === parseInt(id_cliente));
-  const clientName = clientObj ? `${clientObj.nombres} ${clientObj.apellidos || ''}`.trim() : 'Consumidor Final';
+  const clientName = `${clientObj.nombres} ${clientObj.apellidos || ''}`.trim();
 
   // Update caja totals
   const numTotal = parseFloat(total);

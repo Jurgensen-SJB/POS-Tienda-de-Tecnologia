@@ -3,7 +3,7 @@ import { api } from '../../api/api';
 import { useApp } from '../../context/AppContext';
 
 export const AuditoriaView = () => {
-  const { showToast, employees = [] } = useApp();
+  const { showToast } = useApp();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterOp, setFilterOp] = useState('TODOS');
@@ -353,7 +353,7 @@ export const AuditoriaView = () => {
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
             <div className="p-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-blue-400">verified</span>
+                <span className="material-symbols-outlined text-red-400">verified</span>
                 <div>
                   <span className="font-bold text-sm block">
                     Registro de Auditoría #{selectedLog.id_registro} · {selectedLog.operacion}
