@@ -6,7 +6,7 @@ export const ProductGrid = () => {
   const { products, activeCategory, searchQuery } = useApp();
   const gridContainerRef = useRef(null);
 
-  // Filter products by category, search and active state
+  // Filter products by category, search and active state 
   const filtered = products.filter((p) => {
     const isActive = (p.estado || 'ACTIVO').toUpperCase() === 'ACTIVO';
     if (!isActive) return false;
@@ -19,7 +19,7 @@ export const ProductGrid = () => {
     return matchesCategory && matchesSearch;
   });
 
-  // Scroll to top when category or search changes
+  // Scroll to top when category or search cambios
   useEffect(() => {
     if (gridContainerRef.current) {
       gridContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
