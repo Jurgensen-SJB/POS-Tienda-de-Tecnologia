@@ -6,7 +6,17 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
-    "db:setup": "node db/setup.js"
+    "db:setup": "node db/setup.js",
+    "test": "node --test test/sprint1/test_sprint1_unit.js test/sprint2/test_sprint2_unit.js test/sprint3/test_sprint3_unit.js test/sprint4/test_sprint4_unit.js test/sprint5/test_sprint5_unit.js",
+    "test:sprint1": "node --test test/sprint1/test_sprint1_unit.js",
+    "test:sprint2": "node --test test/sprint2/test_sprint2_unit.js",
+    "test:sprint2:all": "node --test test/sprint2/test_cpu_s2_001.js test/sprint2/test_cpu_s2_002.js test/sprint2/test_cpu_s2_003.js test/sprint2/test_cpu_s2_004.js test/sprint2/test_cpu_s2_005.js",
+    "test:sprint3": "node --test test/sprint3/test_sprint3_unit.js",
+    "test:sprint3:all": "node --test test/sprint3/test_cpu_s3_001.js test/sprint3/test_cpu_s3_002.js test/sprint3/test_cpu_s3_003.js test/sprint3/test_cpu_s3_004.js test/sprint3/test_cpu_s3_005.js",
+    "test:sprint4": "node --test test/sprint4/test_sprint4_unit.js",
+    "test:sprint4:all": "node --test test/sprint4/test_cpu_s4_001.js test/sprint4/test_cpu_s4_002.js test/sprint4/test_cpu_s4_003.js test/sprint4/test_cpu_s4_004.js test/sprint4/test_cpu_s4_005.js",
+    "test:sprint5": "node --test test/sprint5/test_sprint5_unit.js",
+    "test:sprint5:all": "node --test test/sprint5/test_cpu_s5_001.js test/sprint5/test_cpu_s5_002.js test/sprint5/test_cpu_s5_003.js test/sprint5/test_cpu_s5_004.js test/sprint5/test_cpu_s5_005.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

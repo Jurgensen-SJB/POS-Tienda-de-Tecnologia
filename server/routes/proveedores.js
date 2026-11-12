@@ -33,7 +33,8 @@ router.get('/', async (req, res) => {
       const term = q.trim().toLowerCase();
       filtered = filtered.filter(p =>
         (p.nombre && p.nombre.toLowerCase().includes(term)) ||
-        (p.identificacion && p.identificacion.toLowerCase().includes(term))
+        (p.identificacion && p.identificacion.toLowerCase().includes(term)) ||
+        (p.correo && p.correo.toLowerCase().includes(term))
       );
     }
     res.json(filtered);

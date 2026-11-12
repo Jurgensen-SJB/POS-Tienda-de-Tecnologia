@@ -1,0 +1,41 @@
+---
+env:
+  contexts:
+    - name: "NexPOS-Suite-API"
+      urls:
+        - "http://localhost:5000"
+      includePaths:
+        - "http://localhost:5000/.*"
+  parameters:
+    failOnError: false
+    failOnWarning: false
+    progressToStdout: true
+
+jobs:
+  - type: openapi
+    name: openapi
+    parameters:
+      apiFile: "c:/Users/jhoan/Music/POS-Tienda-de-Tecnologia/nexpos_openapi.json"
+      targetUrl: "http://localhost:5000"
+      context: "NexPOS-Suite-API"
+
+  - type: passiveScan-wait
+    name: passiveScan-wait
+    parameters:
+      maxDuration: 2
+
+  - type: activeScan
+    name: activeScan
+    parameters:
+      context: "NexPOS-Suite-API"
+      maxDuration: 5
+
+  - type: report
+    name: report
+    parameters:
+      template: "traditional-html"
+      reportDir: "c:/Users/jhoan/Music/POS-Tienda-de-Tecnologia"
+      reportFile: "zap_report.html"
+      reportTitle: "Reporte de Seguridad OWASP ZAP - NexPOS Suite"
+      reportDescription: "Auditoría dinámica de seguridad DAST sobre la API de NexPOS Suite"
+      displayReport: true

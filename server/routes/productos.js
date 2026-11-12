@@ -138,6 +138,7 @@ router.post('/', async (req, res) => {
 
       await client.query('COMMIT');
       newProduct.stock = initialStock;
+      newProduct.precio_venta = parseFloat(newProduct.precio_venta);
 
       // Audit log
       await registrarOperacion({

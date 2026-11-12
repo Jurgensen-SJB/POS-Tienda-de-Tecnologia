@@ -375,6 +375,9 @@ router.post('/:id/anular', async (req, res) => {
   // Fallback in-memory
   const sale = salesHistory.find(s => s.id_venta === parseInt(id) || s.numero_factura === id);
   if (sale) {
+    if (sale.estado === 'ANULADA') {
+      return res.status(400).json({ error: 'La venta ya se encuentra anulada' });
+    }
     sale.estado = 'ANULADA';
     if (Array.isArray(sale.items)) {
       sale.items.forEach(item => {

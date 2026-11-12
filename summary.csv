@@ -1,0 +1,6 @@
+Label,# Samples,Average,Min,Max,Std. Dev.,Error %,Throughput,Received KB/sec,Sent KB/sec,Avg. Bytes
+01 - GET /api/health (Health Check),150,4,1,92,10.33,0.000%,31.62555,11.55,5.78,374.0
+02 - POST /api/auth/login (Autenticación),150,6,3,17,3.06,100.000%,32.24420,11.18,8.41,355.0
+03 - GET /api/productos (Catálogo Lectura),150,5,3,15,2.16,0.000%,32.30670,433.65,5.99,13745.0
+04 - POST /api/clientes (Registro Cliente Escritura),150,11,8,28,4.78,0.000%,32.28584,16.59,15.45,526.3
+TOTAL,600,6,1,92,6.66,25.000%,125.94458,461.23,34.87,3750.1

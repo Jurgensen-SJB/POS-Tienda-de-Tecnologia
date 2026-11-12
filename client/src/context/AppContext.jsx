@@ -5,7 +5,13 @@ const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
   // Navigation
-  const [currentView, setCurrentView] = useState('pos');
+  // Lee el hash de la URL al iniciar (ej: /#compras → 'compras')
+  // Esto permite auditar vistas específicas con Lighthouse sin perder la navegación normal
+  const [currentView, setCurrentView] = useState(() => {
+    const hash = window.location.hash.replace('#', '').trim();
+    const validViews = ['pos','caja','facturacion','stock','categorias','proveedores','compras','clientes','empleados','auditoria','estadisticas'];
+    return validViews.includes(hash) ? hash : 'pos';
+  });
 
   // Core Data
   const [products, setProducts] = useState([]);
@@ -97,7 +103,10 @@ export const AppProvider = ({ children }) => {
       // Also load full permisos catalog for the admin UI
       api.getAllPermisos().then(list => setAllPermisos(list)).catch(() => {});
       showToast(`¡Bienvenido/a, ${user.nombre_completo || user.nombre}!`, 'verified_user');
-      setCurrentView('pos');
+      // Respetar el hash de la URL para pruebas de Lighthouse (ej: /#compras)
+      const validViews = ['pos','caja','facturacion','stock','categorias','proveedores','compras','clientes','empleados','auditoria','estadisticas'];
+      const hashView = window.location.hash.replace('#', '').trim();
+      setCurrentView(validViews.includes(hashView) ? hashView : 'pos');
       // Check if caja needs to be opened
       checkCajaAndPrompt();
       return { success: true };
@@ -178,7 +187,10 @@ export const AppProvider = ({ children }) => {
         setUserPermisos(match.user.permisos);
         api.getAllPermisos().then(list => setAllPermisos(list)).catch(() => {});
         showToast(`¡Bienvenido/a, ${match.user.nombre_completo}!`, 'verified_user');
-        setCurrentView('pos');
+        // Respetar el hash de la URL para pruebas de Lighthouse (ej: /#compras)
+        const validViews2 = ['pos','caja','facturacion','stock','categorias','proveedores','compras','clientes','empleados','auditoria','estadisticas'];
+        const hashView2 = window.location.hash.replace('#', '').trim();
+        setCurrentView(validViews2.includes(hashView2) ? hashView2 : 'pos');
         // Check if caja needs to be opened
         checkCajaAndPrompt();
         return { success: true };
